@@ -7,7 +7,8 @@ Local League of Legends tracker for `8YKS#DEPTH`. It does not read game memory o
 Requires Node.js 24 or later.
 
 ```powershell
-cd C:\Users\yanis\lol-coach-v1
+git clone https://github.com/8yanks/riftline.git
+cd riftline
 $env:RIOT_API_KEY = Read-Host 'Riot API key'
 npm start
 ```
