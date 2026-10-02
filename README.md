@@ -9,15 +9,28 @@ Requires Node.js 24 or later.
 ```powershell
 git clone https://github.com/8yanks/riftline.git
 cd riftline
-$env:RIOT_API_KEY = Read-Host 'Riot API key'
+Copy-Item .env.example .env
+# Edit .env and replace the RIOT_API_KEY placeholder.
 npm start
 ```
 
-Open `http://127.0.0.1:4173` and click **Refresh my matches**. The key stays in the terminal environment and is not written to project files. To use another account:
+In Command Prompt (CMD), run:
+
+```cmd
+copy .env.example .env
+notepad .env
+npm start
+```
+
+In Notepad, replace the `RIOT_API_KEY` placeholder with your current key and save the file before running `npm start`. Node.js 24 loads `.env` automatically. The key stays in the local `.env` file, which Git ignores. Open `http://127.0.0.1:4173` and click **Refresh my matches**. To use another account, edit the two Riot ID lines in `.env`.
+
+You can also set the variables for one PowerShell session instead of using `.env`:
 
 ```powershell
+$env:RIOT_API_KEY = Read-Host 'Riot API key'
 $env:RIOT_GAME_NAME = '8YKS'
 $env:RIOT_TAG_LINE = 'DEPTH'
+npm start
 ```
 
 The match cache is stored in `data/matches.json`, which Git ignores. Each sync fetches up to 100 recent solo queue match IDs, reuses cached matches, and spaces out API calls. The first expanded sync can take roughly two minutes. The UI shows import progress. HTTP 429 responses use Riot's `Retry-After` header.
