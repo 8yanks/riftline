@@ -26,7 +26,7 @@ The match cache is stored in `data/matches.json`, which Git ignores. Each sync f
 - **Overview**: Riot rank and a role selector for top, jungle, mid, bot, and support. Each role shows its games, wins, win rate, KDA, CS/min, kill participation, damage/min, gold/min, vision/min, champions, and matches from the imported solo queue sample.
 - **Live game**: Riot's local API (`127.0.0.1:2999`) for matchmade and custom games. It stays empty outside a match. Optional local endpoints can fail without hiding the game status. Item signals are exploratory heuristics.
 - **Vision Lab**: interactive simulation of last seen game time, a timer that starts immediately on disappearance, a red SS after three seconds, and a resizable minimap.
-- **Game plans**: three Annie rune pages with illustrated items and a suggested priority based on the manually selected enemy composition. These choices still need validation against patch statistics.
+- **Game plans**: a compact draft desk with an enemy team strip, three selectable Annie rune and item plans, and an explained matchup tab. The enemy composition is entered manually. Rune and item icons come from Data Dragon. These choices still need validation against patch statistics; the app does not calculate numerical matchup or team-scaling scores.
 
 ## Current limits
 

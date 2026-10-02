@@ -34,7 +34,7 @@ async function loadStaticData() {
     ]);
     itemData = items.data || {};
     championData = champions.data || {};
-    runeData = Object.fromEntries(runeTrees.flatMap((tree) => tree.slots.flatMap((slot) => slot.runes.map((rune) => [rune.id, rune.name]))));
+    runeData = Object.fromEntries(runeTrees.flatMap((tree) => tree.slots.flatMap((slot) => slot.runes.map((rune) => [rune.id, { name: rune.name, icon: rune.icon }]))));
   } catch { /* Offline mode keeps the dashboard usable. */ }
   renderPlans();
 }
@@ -44,6 +44,8 @@ const plans = [
   { key: 'safe', number: '02 · SAFETY', title: 'Stay in control', description: 'Defensive mobility and a steady lane against assassins or teams that can engage on you.', main: [8230, 8226, 8210, 8236], secondary: [8473, 8451], objective: 'Reach your item spikes without giving up kills', items: [3157, 3089] },
   { key: 'poke', number: '03 · POKE', title: 'Wear them down', description: 'Consistent pressure against a less mobile target. Set up the wave before moving around the map.', main: [8229, 8226, 8210, 8237], secondary: [8126, 8106], objective: 'Force a recall and gain priority', items: [6655, 3137] }
 ];
+let viewedPlan = 'burst';
+let activeDeskTab = 'builds';
 
 const dangerousMids = new Set(['Fizz', 'Zed', 'Talon', 'Katarina', 'Akali', 'Qiyana', 'Yasuo', 'Yone', 'Irelia', 'Leblanc', 'Syndra', 'Xerath', 'Velkoz', 'Hwei', 'Ziggs', 'Lux', 'Azir']);
 const pokeMids = new Set(['Veigar', 'Malzahar', 'TwistedFate', 'Anivia', 'Viktor', 'Orianna']);
@@ -72,15 +74,45 @@ function updatePlan() {
   const composition = Object.fromEntries([...document.querySelectorAll('.enemy-select')].map((select) => [select.dataset.role, select.value]));
   const selected = choosePlan(composition);
   $('#plan-reason').textContent = selected.reason;
+  viewedPlan = selected.key || viewedPlan;
+  const roles = [['top', 'TOP'], ['jungle', 'JUNGLE'], ['mid', 'MID'], ['adc', 'BOT'], ['support', 'SUPPORT']];
+  $('#draft-enemies').innerHTML = roles.map(([key, label]) => `<div class="draft-slot ${composition[key] ? 'filled' : ''}">${composition[key] ? `<img src="${championIcon(composition[key])}" alt="">` : '<span>?</span>'}<small>${label}</small></div>`).join('');
+  renderPlanCards(selected);
+  const mid = composition.mid;
+  const jungle = composition.jungle;
+  $('#matchup-brief').innerHTML = `<div class="brief-opponent">${mid ? `<img src="${championIcon(mid)}" alt="">` : '<span>?</span>'}<div><small>LANE OPPONENT</small><strong>${escapeHtml(championData[mid]?.name || 'Choose enemy mid')}</strong></div></div><div class="brief-row"><span>LANE APPROACH</span><strong>${selected.key === 'safe' ? 'Respect engage range' : selected.key === 'poke' ? 'Trade around cooldowns' : selected.key === 'burst' ? 'Look for a short all-in window' : 'Waiting for matchup'}</strong></div><div class="brief-row"><span>JUNGLE CONTEXT</span><strong>${jungle ? `Track ${escapeHtml(championData[jungle]?.name || jungle)} before pushing` : 'Select enemy jungle for context'}</strong></div><p class="brief-note">These are planning prompts, not per-level win probabilities. Check wave state, health and items in the actual game.</p>`;
+}
+
+function runeIcon(id) {
+  const rune = runeData[id];
+  return rune?.icon ? `<img src="https://ddragon.leagueoflegends.com/cdn/img/${escapeHtml(rune.icon)}" alt="${escapeHtml(rune.name)}" title="${escapeHtml(rune.name)}">` : `<span title="Rune ${id}">?</span>`;
+}
+
+function renderPlanCards(selected) {
   $('#plan-grid').innerHTML = plans.map((plan) => {
     const recommended = plan.key === selected.key;
-    const itemHtml = plan.items.map((id) => itemData[id] ? `<span class="plan-item"><img src="${itemIcon(id)}" alt="">${escapeHtml(itemData[id].name)}</span>` : '').join('');
-    const runeNames = (ids) => ids.map((id) => escapeHtml(runeData[id] || `Rune ${id}`)).join(' · ');
-    return `<article class="plan-card ${recommended ? 'recommended' : ''}"><span class="plan-num">${plan.number}${recommended ? ' · SUGGESTED' : ''}</span><h3>${plan.title}</h3><p>${plan.description}</p><div class="plan-runes"><div><b>PRIMARY</b> ${runeNames(plan.main)}</div><div><b>SECONDARY</b> ${runeNames(plan.secondary)}</div></div><div class="plan-items">${itemHtml || '<span class="subtle">Items available after patch data loads.</span>'}</div><div class="plan-bottom"><span>GOAL</span><strong>${plan.objective}</strong></div></article>`;
+    const itemIcons = plan.items.map((id) => `<img src="${itemIcon(id)}" alt="${escapeHtml(itemData[id]?.name || `Item ${id}`)}" title="${escapeHtml(itemData[id]?.name || `Item ${id}`)}">`).join('');
+    return `<button class="plan-row ${recommended ? 'recommended' : ''} ${viewedPlan === plan.key ? 'selected' : ''}" data-plan="${plan.key}" aria-pressed="${viewedPlan === plan.key}"><span class="plan-index">${plan.number.slice(0, 2)}</span><span class="plan-row-copy"><strong>${plan.title}</strong><small>${recommended ? 'SUGGESTED FOR THIS DRAFT' : plan.number.slice(5)}</small></span><span class="plan-icons">${plan.main.slice(0, 2).map(runeIcon).join('')}${itemIcons}</span><span class="plan-arrow">›</span></button>`;
   }).join('');
+  const plan = plans.find((row) => row.key === viewedPlan) || plans[0];
+  const runeNames = (ids) => ids.map((id) => `<span class="detail-rune">${runeIcon(id)}${escapeHtml(runeData[id]?.name || `Rune ${id}`)}</span>`).join('');
+  const itemNames = plan.items.map((id) => `<span class="detail-item"><img src="${itemIcon(id)}" alt="">${escapeHtml(itemData[id]?.name || `Item ${id}`)}</span>`).join('');
+  $('#plan-detail').innerHTML = `<div class="detail-heading"><span>${plan.number}</span><h3>${plan.title}</h3></div><p>${plan.description}</p><div class="detail-columns"><div><small>PRIMARY RUNES</small>${runeNames(plan.main)}</div><div><small>SECONDARY RUNES</small>${runeNames(plan.secondary)}</div><div><small>CORE ITEMS</small>${itemNames}</div></div><div class="detail-goal"><small>GAME PLAN</small><strong>${plan.objective}</strong></div>`;
 }
 
 document.querySelectorAll('.enemy-select').forEach((select) => select.addEventListener('change', updatePlan));
+$('#plan-grid').addEventListener('click', (event) => {
+  const button = event.target.closest('[data-plan]');
+  if (!button) return;
+  viewedPlan = button.dataset.plan;
+  const composition = Object.fromEntries([...document.querySelectorAll('.enemy-select')].map((select) => [select.dataset.role, select.value]));
+  renderPlanCards(choosePlan(composition));
+});
+document.querySelectorAll('[data-desk-tab]').forEach((button) => button.addEventListener('click', () => {
+  activeDeskTab = button.dataset.deskTab;
+  document.querySelectorAll('[data-desk-tab]').forEach((tab) => tab.classList.toggle('active', tab.dataset.deskTab === activeDeskTab));
+  document.querySelectorAll('.desk-panel').forEach((panel) => panel.classList.toggle('active', panel.id === `desk-${activeDeskTab}`));
+}));
 
 let currentProfile = null;
 const roleNames = { ALL: 'All roles', TOP: 'Top', JUNGLE: 'Jungle', MIDDLE: 'Mid', BOTTOM: 'Bot', UTILITY: 'Support' };
