@@ -28,9 +28,9 @@ async function loadStaticData() {
     const versions = await getJson('https://ddragon.leagueoflegends.com/api/versions.json');
     ddragonVersion = versions[0];
     const [items, champions, runeTrees] = await Promise.all([
-      getJson(`https://ddragon.leagueoflegends.com/cdn/${ddragonVersion}/data/fr_FR/item.json`),
-      getJson(`https://ddragon.leagueoflegends.com/cdn/${ddragonVersion}/data/fr_FR/champion.json`),
-      getJson(`https://ddragon.leagueoflegends.com/cdn/${ddragonVersion}/data/fr_FR/runesReforged.json`)
+      getJson(`https://ddragon.leagueoflegends.com/cdn/${ddragonVersion}/data/en_US/item.json`),
+      getJson(`https://ddragon.leagueoflegends.com/cdn/${ddragonVersion}/data/en_US/champion.json`),
+      getJson(`https://ddragon.leagueoflegends.com/cdn/${ddragonVersion}/data/en_US/runesReforged.json`)
     ]);
     itemData = items.data || {};
     championData = champions.data || {};
@@ -40,9 +40,9 @@ async function loadStaticData() {
 }
 
 const plans = [
-  { key: 'burst', number: '01 · BURST', title: 'Punir une erreur', description: 'Échanges courts et menace de kill après le niveau 6. La meilleure option si la lane te laisse entrer à portée sans subir trop de poke.', main: [8112, 8126, 8137, 8106], secondary: [8226, 8210], objective: 'Créer une fenêtre de roam', items: [4645, 3089] },
-  { key: 'safe', number: '02 · SURVIE', title: 'Garder le contrôle', description: 'Mobilité défensive et lane stable face à un assassin ou à une composition capable de t’engager.', main: [8230, 8226, 8210, 8236], secondary: [8473, 8451], objective: 'Atteindre tes achats sans donner de kills', items: [3157, 3089] },
-  { key: 'poke', number: '03 · POKE', title: 'User la lane', description: 'Pression régulière contre une cible peu mobile. Préparer la vague avant de bouger sur la carte.', main: [8229, 8226, 8210, 8237], secondary: [8126, 8106], objective: 'Forcer un recall et prendre la priorité', items: [6655, 3137] }
+  { key: 'burst', number: '01 · BURST', title: 'Punish a mistake', description: 'Short trades and kill pressure after level 6. Best when you can get in range without taking too much poke.', main: [8112, 8126, 8137, 8106], secondary: [8226, 8210], objective: 'Create a roam window', items: [4645, 3089] },
+  { key: 'safe', number: '02 · SAFETY', title: 'Stay in control', description: 'Defensive mobility and a steady lane against assassins or teams that can engage on you.', main: [8230, 8226, 8210, 8236], secondary: [8473, 8451], objective: 'Reach your item spikes without giving up kills', items: [3157, 3089] },
+  { key: 'poke', number: '03 · POKE', title: 'Wear them down', description: 'Consistent pressure against a less mobile target. Set up the wave before moving around the map.', main: [8229, 8226, 8210, 8237], secondary: [8126, 8106], objective: 'Force a recall and gain priority', items: [6655, 3137] }
 ];
 
 const dangerousMids = new Set(['Fizz', 'Zed', 'Talon', 'Katarina', 'Akali', 'Qiyana', 'Yasuo', 'Yone', 'Irelia', 'Leblanc', 'Syndra', 'Xerath', 'Velkoz', 'Hwei', 'Ziggs', 'Lux', 'Azir']);
@@ -51,18 +51,18 @@ const pokeMids = new Set(['Veigar', 'Malzahar', 'TwistedFate', 'Anivia', 'Viktor
 function choosePlan(composition) {
   const mid = composition.mid;
   const jungle = composition.jungle;
-  if (!mid) return { key: null, reason: 'Choisis au moins le mid adverse pour recevoir une priorité expliquée.' };
-  if (dangerousMids.has(mid) || ['Rengar', 'Khazix', 'Nocturne', 'Evelynn'].includes(jungle)) return { key: 'safe', reason: `${mid} ou le jungler choisi peut fortement punir une Annie avancée. La page survie mérite la priorité ; vérifie aussi les objets défensifs selon les dégâts réellement présents.` };
-  if (pokeMids.has(mid)) return { key: 'poke', reason: `${mid} donne souvent des fenêtres d’échanges répétées. La page poke peut créer une pression de PV avant un roam ; compare-la à la page burst selon ta portée réelle en lane.` };
-  return { key: 'burst', reason: `Contre ${mid}, la page burst est le point de départ. Garde la page survie si le matchup ou les ganks rendent l’accès à portée difficile.` };
+  if (!mid) return { key: null, reason: 'Select at least the enemy mid to see an explained priority.' };
+  if (dangerousMids.has(mid) || ['Rengar', 'Khazix', 'Nocturne', 'Evelynn'].includes(jungle)) return { key: 'safe', reason: `${mid} or the selected jungler can punish an overextended Annie. Start with the safety page, then adjust defensive items to the damage actually present.` };
+  if (pokeMids.has(mid)) return { key: 'poke', reason: `${mid} may offer repeated trade windows. The poke page can create a health advantage before a roam; compare it with burst based on your actual access to the lane.` };
+  return { key: 'burst', reason: `Against ${mid}, burst is the starting point. Keep the safety page in mind if the matchup or ganks make it hard to get in range.` };
 }
 
 function renderPlans() {
   $('#patch-label').textContent = `DATA DRAGON ${ddragonVersion}`;
-  const names = Object.values(championData).map((c) => ({ id: c.id, name: c.name })).sort((a, b) => a.name.localeCompare(b.name, 'fr'));
+  const names = Object.values(championData).map((c) => ({ id: c.id, name: c.name })).sort((a, b) => a.name.localeCompare(b.name, 'en'));
   document.querySelectorAll('.enemy-select').forEach((select) => {
     const previous = select.value;
-    select.innerHTML = '<option value="">Choisir</option>' + names.map((champion) => `<option value="${escapeHtml(champion.id)}">${escapeHtml(champion.name)}</option>`).join('');
+    select.innerHTML = '<option value="">Select</option>' + names.map((champion) => `<option value="${escapeHtml(champion.id)}">${escapeHtml(champion.name)}</option>`).join('');
     select.value = previous;
   });
   updatePlan();
@@ -76,7 +76,7 @@ function updatePlan() {
     const recommended = plan.key === selected.key;
     const itemHtml = plan.items.map((id) => itemData[id] ? `<span class="plan-item"><img src="${itemIcon(id)}" alt="">${escapeHtml(itemData[id].name)}</span>` : '').join('');
     const runeNames = (ids) => ids.map((id) => escapeHtml(runeData[id] || `Rune ${id}`)).join(' · ');
-    return `<article class="plan-card ${recommended ? 'recommended' : ''}"><span class="plan-num">${plan.number}${recommended ? ' · PRIORITÉ' : ''}</span><h3>${plan.title}</h3><p>${plan.description}</p><div class="plan-runes"><div><b>PRINCIPAL</b> ${runeNames(plan.main)}</div><div><b>SECONDAIRE</b> ${runeNames(plan.secondary)}</div></div><div class="plan-items">${itemHtml || '<span class="subtle">Objets disponibles après chargement du patch.</span>'}</div><div class="plan-bottom"><span>OBJECTIF</span><strong>${plan.objective}</strong></div></article>`;
+    return `<article class="plan-card ${recommended ? 'recommended' : ''}"><span class="plan-num">${plan.number}${recommended ? ' · SUGGESTED' : ''}</span><h3>${plan.title}</h3><p>${plan.description}</p><div class="plan-runes"><div><b>PRIMARY</b> ${runeNames(plan.main)}</div><div><b>SECONDARY</b> ${runeNames(plan.secondary)}</div></div><div class="plan-items">${itemHtml || '<span class="subtle">Items available after patch data loads.</span>'}</div><div class="plan-bottom"><span>GOAL</span><strong>${plan.objective}</strong></div></article>`;
   }).join('');
 }
 
@@ -89,14 +89,14 @@ function renderProfile(profile) {
   $('#mid-games').textContent = summary.total ? summary.midGames : '—';
   const solo = profile.ranks.find((r) => r.queueType === 'RANKED_SOLO_5x5');
   $('#rank').textContent = solo ? `${solo.tier} ${solo.rank}` : '—';
-  $('#lp').textContent = solo ? `${solo.leaguePoints} LP · ${solo.wins} V / ${solo.losses} D cette saison` : 'Synchronise pour actualiser';
-  $('#updated-at').textContent = profile.updatedAt ? `Mis à jour ${new Date(profile.updatedAt).toLocaleString('fr-FR')}` : 'En attente de synchronisation';
+  $('#lp').textContent = solo ? `${solo.leaguePoints} LP · ${solo.wins} W / ${solo.losses} L this season` : 'Sync to refresh';
+  $('#updated-at').textContent = profile.updatedAt ? `Updated ${new Date(profile.updatedAt).toLocaleString('en-GB')}` : 'Waiting for first sync';
   $('#champions').classList.toggle('empty', !summary.champions.length);
   $('#champions').innerHTML = summary.champions.length ? summary.champions.slice(0, 8).map((row) => `
-    <div class="champion-row"><img class="champion-icon" src="${championIcon(row.champion)}" alt=""><div class="champion-main"><strong>${escapeHtml(row.champion)}</strong><small>${row.games} partie${row.games > 1 ? 's' : ''} · ${row.csPerMin} CS/min · ${row.deaths} morts</small></div><div class="row-value"><strong class="${row.winRate >= 50 ? 'win' : 'loss'}">${row.winRate} %</strong><small>victoires</small></div></div>`).join('') : 'Synchronise pour voir tes champions.';
+    <div class="champion-row"><img class="champion-icon" src="${championIcon(row.champion)}" alt=""><div class="champion-main"><strong>${escapeHtml(row.champion)}</strong><small>${row.games} game${row.games > 1 ? 's' : ''} · ${row.csPerMin} CS/min · ${row.deaths} deaths</small></div><div class="row-value"><strong class="${row.winRate >= 50 ? 'win' : 'loss'}">${row.winRate} %</strong><small>win rate</small></div></div>`).join('') : 'Sync to view your champions.';
   $('#matches').classList.toggle('empty', !profile.matches.length);
   $('#matches').innerHTML = profile.matches.length ? profile.matches.slice(0, 8).map((match) => `
-    <div class="match-row"><img class="champion-icon" src="${championIcon(match.champion)}" alt=""><div class="match-main"><strong>${escapeHtml(match.champion)} <span class="${match.win ? 'win' : 'loss'}">${match.win ? '· Victoire' : '· Défaite'}</span></strong><small>${escapeHtml(match.role)} · ${new Date(match.date).toLocaleDateString('fr-FR')} · ${match.minutes} min</small></div><div class="row-value"><strong>${match.kills}/${match.deaths}/${match.assists}</strong><small>${match.cs} CS · ${match.kp}% KP</small></div></div>`).join('') : 'Aucune partie en cache.';
+    <div class="match-row"><img class="champion-icon" src="${championIcon(match.champion)}" alt=""><div class="match-main"><strong>${escapeHtml(match.champion)} <span class="${match.win ? 'win' : 'loss'}">${match.win ? '· Win' : '· Loss'}</span></strong><small>${escapeHtml(match.role)} · ${new Date(match.date).toLocaleDateString('en-GB')} · ${match.minutes} min</small></div><div class="row-value"><strong>${match.kills}/${match.deaths}/${match.assists}</strong><small>${match.cs} CS · ${match.kp}% KP</small></div></div>`).join('') : 'No matches cached yet.';
 }
 
 async function refreshProfile() {
@@ -107,11 +107,11 @@ async function refreshProfile() {
 async function syncProfile() {
   const button = $('#sync-button');
   button.disabled = true;
-  $('#sync-note').textContent = 'Import en cours. Les limites Riot sont respectées…';
+  $('#sync-note').textContent = 'Importing matches within Riot rate limits…';
   try {
     const profile = await getJson('/api/sync');
     renderProfile(profile);
-    $('#sync-note').textContent = `${profile.matches.length} parties en cache. Clé jamais enregistrée sur disque.`;
+    $('#sync-note').textContent = `${profile.matches.length} matches cached. Your key is never saved to disk.`;
   } catch (error) { $('#sync-note').textContent = error.message; }
   finally { button.disabled = false; }
 }
@@ -122,25 +122,25 @@ function buildSignals(live) {
   const crit = enemies.reduce((sum, player) => sum + player.items.reduce((n, item) => n + Number(itemData[item.id]?.stats?.FlatCritChanceMod || 0), 0), 0);
   const magicResist = enemies.reduce((sum, player) => sum + player.items.reduce((n, item) => n + Number(itemData[item.id]?.stats?.FlatSpellBlockMod || 0), 0), 0);
   const results = [];
-  if (crit >= 0.4) results.push({ title: 'Critique adverse en hausse', detail: 'Plusieurs achats apportent du critique. Vérifie si une option défensive est nécessaire au prochain retour base. Randuin convient surtout aux champions qui peuvent investir dans l’armure ; sur Annie, compare d’abord les options AP défensives.' });
-  if (magicResist >= 100) results.push({ title: 'Résistance magique adverse', detail: 'La pénétration magique mérite d’être comparée à un achat de puissance brute.' });
-  if (!results.length) results.push({ title: 'Aucun signal fort pour le moment', detail: 'Les objets adverses observés ne déclenchent pas encore de conseil prioritaire. La recommandation reste indicative.' });
+  if (crit >= 0.4) results.push({ title: 'Enemy crit is rising', detail: 'Several enemy purchases add crit. Consider a defensive option on your next recall. Randuin works best on champions that can invest in armor; on Annie, compare defensive AP options first.' });
+  if (magicResist >= 100) results.push({ title: 'Enemy magic resistance', detail: 'Compare magic penetration with a raw ability power purchase.' });
+  if (!results.length) results.push({ title: 'No strong item signal yet', detail: 'Observed enemy items do not trigger a priority suggestion. This readout is only a guide.' });
   return results;
 }
 
 async function refreshLive() {
   try {
     const live = await getJson('/api/live');
-    $('#live-state').textContent = live.online ? 'PARTIE ACTIVE' : 'HORS PARTIE';
-    $('#live-heading').textContent = live.online ? `${live.active.champion || 'Champion'} · Niveau ${live.active.level}` : 'Aucune partie active';
-    $('#live-description').textContent = live.online ? 'Données locales du client de jeu. Actualisation toutes les 5 secondes.' : live.message;
+    $('#live-state').textContent = live.online ? 'GAME LIVE' : 'OFFLINE';
+    $('#live-heading').textContent = live.online ? `${live.active.champion || 'Champion'} · Level ${live.active.level}` : 'No active game';
+    $('#live-description').textContent = live.online ? 'Local game client data. Refreshes every 5 seconds.' : live.message;
     $('#live-time').textContent = live.online ? formatGameTime(live.gameTime) : '--:--';
     $('#players').classList.toggle('empty', !live.online);
     $('#build-signals').classList.toggle('empty', !live.online);
     $('#players').innerHTML = live.online ? live.players.map((player) => `
-      <div class="player-row"><img class="champion-icon" src="${championIcon(player.champion)}" alt=""><div class="champion-main"><strong>${escapeHtml(player.champion)} · ${escapeHtml(player.role)}</strong><small>${escapeHtml(player.team)} · niveau ${player.level} · ${player.scores.kills}/${player.scores.deaths}/${player.scores.assists}</small><div class="item-list">${player.items.filter((i) => i.id).map((i) => `<img class="item-icon" src="${itemIcon(i.id)}" alt="${escapeHtml(i.name)}" title="${escapeHtml(i.name)}">`).join('')}</div></div></div>`).join('') : 'En attente d’une partie.';
-    $('#build-signals').innerHTML = live.online ? buildSignals(live).map((signal) => `<div class="signal"><strong>${escapeHtml(signal.title)}</strong><p>${escapeHtml(signal.detail)}</p></div>`).join('') : 'Les signaux seront calculés à partir des objets observés.';
-  } catch { $('#live-state').textContent = 'API INDISPONIBLE'; }
+      <div class="player-row"><img class="champion-icon" src="${championIcon(player.champion)}" alt=""><div class="champion-main"><strong>${escapeHtml(player.champion)} · ${escapeHtml(player.role)}</strong><small>${escapeHtml(player.team)} · level ${player.level} · ${player.scores.kills}/${player.scores.deaths}/${player.scores.assists}</small><div class="item-list">${player.items.filter((i) => i.id).map((i) => { const name = itemData[i.id]?.name || `Item ${i.id}`; return `<img class="item-icon" src="${itemIcon(i.id)}" alt="${escapeHtml(name)}" title="${escapeHtml(name)}">`; }).join('')}</div></div></div>`).join('') : 'Waiting for a match.';
+    $('#build-signals').innerHTML = live.online ? buildSignals(live).map((signal) => `<div class="signal"><strong>${escapeHtml(signal.title)}</strong><p>${escapeHtml(signal.detail)}</p></div>`).join('') : 'Signals will use observed enemy items.';
+  } catch { $('#live-state').textContent = 'API UNAVAILABLE'; }
 }
 
 const champions = [
@@ -160,7 +160,7 @@ function renderVision() {
   $('#sim-time').textContent = formatGameTime(now);
   $('#vision-list').innerHTML = champions.map((champion, index) => {
     const state = visionState(champion, now);
-    return `<div class="vision-row ${state.alert ? 'alert' : ''} ${selected === index ? 'selected' : ''}" data-index="${index}"><div class="vision-portrait"><img src="${championIcon(champion.name)}" alt=""><span class="ss">SS</span></div><div class="vision-info"><strong>${champion.name} · ${champion.role}</strong><small>${champion.visible ? 'Visible · compteur à zéro' : `Dernier aperçu ${formatGameTime(champion.lastSeenAt)}`}</small></div><span class="vision-timer">${champion.visible ? '0 s' : `${state.missingSeconds} s`}</span><button class="vision-action" data-toggle="${index}">${champion.visible ? 'Disparaît' : 'Réapparaît'}</button></div>`;
+    return `<div class="vision-row ${state.alert ? 'alert' : ''} ${selected === index ? 'selected' : ''}" data-index="${index}"><div class="vision-portrait"><img src="${championIcon(champion.name)}" alt=""><span class="ss">SS</span></div><div class="vision-info"><strong>${champion.name} · ${champion.role}</strong><small>${champion.visible ? 'Visible · timer reset' : `Last seen ${formatGameTime(champion.lastSeenAt)}`}</small></div><span class="vision-timer">${champion.visible ? '0 s' : `${state.missingSeconds} s`}</span><button class="vision-action" data-toggle="${index}">${champion.visible ? 'Disappears' : 'Reappears'}</button></div>`;
   }).join('');
   const marker = $('#map-marker');
   marker.style.setProperty('--marker-x', `${champions[selected].x * 100}%`);
@@ -210,9 +210,9 @@ async function init() {
   await loadStaticData();
   try {
     const status = await getJson('/api/status');
-    $('#server-status').textContent = status.keyConfigured ? 'API Riot configurée' : 'Clé Riot à configurer';
-    $('#sync-note').textContent = status.keyConfigured ? 'Prêt à synchroniser depuis Riot.' : 'Définis RIOT_API_KEY dans le terminal, puis relance le serveur.';
-  } catch { $('#server-status').textContent = 'Serveur indisponible'; }
+    $('#server-status').textContent = status.keyConfigured ? 'Riot API ready' : 'Riot key needed';
+    $('#sync-note').textContent = status.keyConfigured ? 'Ready to sync from Riot.' : 'Set RIOT_API_KEY in the terminal, then restart the server.';
+  } catch { $('#server-status').textContent = 'Server unavailable'; }
   await refreshProfile();
   renderVision();
   refreshLive();

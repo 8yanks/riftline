@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="fr">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Riftline — coach LoL personnel</title>
+  <title>Riftline — personal LoL coach</title>
   <link rel="stylesheet" href="/style.css">
   <link rel="stylesheet" href="/plans.css">
   <link rel="stylesheet" href="/editorial.css">
@@ -11,39 +11,39 @@
 <body>
   <div class="shell">
     <aside class="sidebar">
-      <div class="brand"><span class="brand-mark">R</span><div><strong>RIFTLINE</strong><small>COACH LOL PERSONNEL</small></div></div>
-      <nav aria-label="Navigation principale">
-        <button class="nav active" data-page="overview">Vue d’ensemble</button>
-        <button class="nav" data-page="live">Partie en cours</button>
+      <div class="brand"><span class="brand-mark">R</span><div><strong>RIFTLINE</strong><small>PERSONAL LOL COACH</small></div></div>
+      <nav aria-label="Main navigation">
+        <button class="nav active" data-page="overview">Overview</button>
+        <button class="nav" data-page="live">Live game</button>
         <button class="nav" data-page="vision">Vision</button>
-        <button class="nav" data-page="plan">Plans de jeu</button>
+        <button class="nav" data-page="plan">Game plans</button>
       </nav>
-      <div class="sidebar-foot"><span class="status-dot"></span><span id="server-status">Connexion locale</span></div>
+      <div class="sidebar-foot"><span class="status-dot"></span><span id="server-status">Local connection</span></div>
     </aside>
 
     <main>
-      <header class="topbar"><div><p class="eyebrow">LEAGUE OF LEGENDS · EUW</p><h1 id="page-title">Vue d’ensemble</h1></div><div class="account"><span class="avatar">8</span><div><strong>8YKS<span class="muted">#DEPTH</span></strong><small>Suivi personnel</small></div></div></header>
+      <header class="topbar"><div><p class="eyebrow">LEAGUE OF LEGENDS · EUW</p><h1 id="page-title">Overview</h1></div><div class="account"><span class="avatar">8</span><div><strong>8YKS<span class="muted">#DEPTH</span></strong><small>Personal tracker</small></div></div></header>
 
       <section id="overview" class="page active">
-        <div class="hero"><div><p class="eyebrow gold">SUIVI PERSONNEL · MIDLANE</p><h2>Lis la partie.<br><em>Joue le bon coup.</em></h2><p>Tes matchs, tes choix de runes et les informations visibles en game, réunis au même endroit.</p><button class="primary" id="sync-button">Actualiser mes parties <span>↗</span></button><p class="helper" id="sync-note">Chargement du cache local…</p></div></div>
-        <div class="section-head"><div><p class="eyebrow">TES DONNÉES RIOT</p><h3>Progression récente</h3></div><span class="subtle" id="updated-at">—</span></div>
-        <div class="stat-grid"><article class="stat"><span>PARTIES IMPORTÉES</span><strong id="total-games">—</strong><small>Solo queue</small></article><article class="stat"><span>TAUX DE VICTOIRE</span><strong id="win-rate">—</strong><small>Échantillon importé</small></article><article class="stat"><span>PARTIES MID</span><strong id="mid-games">—</strong><small>Sur cet échantillon</small></article><article class="stat"><span>RANG ACTUEL</span><strong id="rank">—</strong><small id="lp">Synchronise pour actualiser</small></article></div>
-        <div class="two-col"><section class="panel"><div class="panel-head"><div><p class="eyebrow">CHAMPIONS</p><h3>Ce que tu joues vraiment</h3></div></div><div id="champions" class="champions empty">Synchronise pour voir tes champions.</div></section><section class="panel"><div class="panel-head"><div><p class="eyebrow">HISTORIQUE</p><h3>Dernières parties</h3></div></div><div id="matches" class="matches empty">Aucune partie en cache.</div></section></div>
+        <div class="hero"><div><p class="eyebrow gold">PERSONAL TRACKER · MID LANE</p><h2>Read the game.<br><em>Make the play.</em></h2><p>Your matches, rune choices, and visible in-game information in one place.</p><button class="primary" id="sync-button">Refresh my matches <span>↗</span></button><p class="helper" id="sync-note">Loading local cache…</p></div></div>
+        <div class="section-head"><div><p class="eyebrow">YOUR RIOT DATA</p><h3>Recent progress</h3></div><span class="subtle" id="updated-at">—</span></div>
+        <div class="stat-grid"><article class="stat"><span>MATCHES IMPORTED</span><strong id="total-games">—</strong><small>Solo queue</small></article><article class="stat"><span>WIN RATE</span><strong id="win-rate">—</strong><small>Imported sample</small></article><article class="stat"><span>MID GAMES</span><strong id="mid-games">—</strong><small>In this sample</small></article><article class="stat"><span>CURRENT RANK</span><strong id="rank">—</strong><small id="lp">Sync to refresh</small></article></div>
+        <div class="two-col"><section class="panel"><div class="panel-head"><div><p class="eyebrow">CHAMPIONS</p><h3>What you actually play</h3></div></div><div id="champions" class="champions empty">Sync to view your champions.</div></section><section class="panel"><div class="panel-head"><div><p class="eyebrow">MATCH HISTORY</p><h3>Recent matches</h3></div></div><div id="matches" class="matches empty">No matches cached yet.</div></section></div>
       </section>
 
       <section id="live" class="page">
-        <div class="section-head"><div><p class="eyebrow">API LOCALE · 127.0.0.1:2999</p><h3>État de la partie</h3></div><span class="pill" id="live-state">Recherche du jeu…</span></div>
-        <div class="live-banner"><div class="live-pulse"></div><div><strong id="live-heading">Aucune partie active</strong><p id="live-description">Lance une partie de LoL pour voir les joueurs, objets et événements autorisés par l’API locale.</p></div><span id="live-time">--:--</span></div>
-        <div class="two-col"><section class="panel"><div class="panel-head"><div><p class="eyebrow">ÉQUIPES</p><h3>Joueurs et objets visibles</h3></div></div><div id="players" class="empty">En attente d’une partie.</div></section><section class="panel"><div class="panel-head"><div><p class="eyebrow">LECTURE DU BUILD</p><h3>Signaux d’achat</h3></div></div><div id="build-signals" class="empty">Les signaux seront calculés à partir des objets observés.</div></section></div>
-        <p class="disclaimer">Cette page ne lit pas la mémoire du jeu et ne donne pas les positions des champions.</p>
+        <div class="section-head"><div><p class="eyebrow">LOCAL API · 127.0.0.1:2999</p><h3>Game status</h3></div><span class="pill" id="live-state">Looking for the game…</span></div>
+        <div class="live-banner"><div class="live-pulse"></div><div><strong id="live-heading">No active game</strong><p id="live-description">Start a LoL match to see players, items, and events available through the local API.</p></div><span id="live-time">--:--</span></div>
+        <div class="two-col"><section class="panel"><div class="panel-head"><div><p class="eyebrow">TEAMS</p><h3>Players and visible items</h3></div></div><div id="players" class="empty">Waiting for a match.</div></section><section class="panel"><div class="panel-head"><div><p class="eyebrow">BUILD READOUT</p><h3>Item signals</h3></div></div><div id="build-signals" class="empty">Signals will use observed enemy items.</div></section></div>
+        <p class="disclaimer">This page does not read game memory or reveal champion positions.</p>
       </section>
 
       <section id="vision" class="page">
-        <div class="section-head"><div><p class="eyebrow">PROTOTYPE INTERACTIF</p><h3>Vision Lab</h3><p class="subtle">Simulateur : aucun état de visibilité n’est lu du jeu à ce stade.</p></div><span class="pill amber">MODE SIMULATION</span></div>
-        <div class="vision-layout"><div class="panel vision-board"><div class="board-toolbar"><div><span class="eyebrow">TEMPS DE JEU</span><strong id="sim-time">12:03</strong></div><label>Taille minimap <input id="map-scale" type="range" min="30" max="80" value="60"><b id="scale-value">60 %</b></label></div><div class="map-stage"><div class="minimap" id="minimap"><div class="map-path diagonal"></div><div class="map-path top-lane"></div><div class="map-path bot-lane"></div><div class="map-river"></div><div class="base blue-base"></div><div class="base red-base"></div><div class="map-marker" id="map-marker"></div><div class="map-caption">DERNIER APERÇU</div></div></div><p class="helper">Clique sur la carte pour déplacer la dernière position du champion sélectionné. Change la taille pour vérifier l’alignement.</p></div><div class="panel vision-panel"><div class="panel-head"><div><p class="eyebrow">ENNEMIS</p><h3>Derniers aperçus</h3></div><span class="subtle">SS après 3 s</span></div><div id="vision-list"></div><div class="vision-help"><span class="help-dot"></span> Clique sur « Disparaît » pour lancer le timer, puis « Réapparaît » pour le remettre à zéro.</div></div></div>
+        <div class="section-head"><div><p class="eyebrow">INTERACTIVE PROTOTYPE</p><h3>Vision Lab</h3><p class="subtle">Simulation: visibility is not read from the game yet.</p></div><span class="pill amber">SIMULATION MODE</span></div>
+        <div class="vision-layout"><div class="panel vision-board"><div class="board-toolbar"><div><span class="eyebrow">GAME TIME</span><strong id="sim-time">12:03</strong></div><label>Minimap size <input id="map-scale" type="range" min="30" max="80" value="60"><b id="scale-value">60 %</b></label></div><div class="map-stage"><div class="minimap" id="minimap"><div class="map-path diagonal"></div><div class="map-path top-lane"></div><div class="map-path bot-lane"></div><div class="map-river"></div><div class="base blue-base"></div><div class="base red-base"></div><div class="map-marker" id="map-marker"></div><div class="map-caption">LAST SEEN</div></div></div><p class="helper">Click the map to move the selected champion's last known position. Resize it to check alignment.</p></div><div class="panel vision-panel"><div class="panel-head"><div><p class="eyebrow">ENEMIES</p><h3>Last seen</h3></div><span class="subtle">SS after 3 s</span></div><div id="vision-list"></div><div class="vision-help"><span class="help-dot"></span> Click “Disappears” to start the timer, then “Reappears” to reset it.</div></div></div>
       </section>
 
-      <section id="plan" class="page"><div class="section-head"><div><p class="eyebrow">AVANT LA PARTIE</p><h3>Trois façons de jouer Annie</h3><p class="subtle">Sélectionne les champions adverses. Les propositions sont des hypothèses à comparer.</p></div><span class="pill amber" id="patch-label">PATCH EN CHARGEMENT</span></div><div class="composition panel"><div class="panel-head"><div><p class="eyebrow">COMPOSITION ADVERSE</p><h3>Qui joue en face ?</h3></div></div><div class="enemy-selects"><label>TOP<select class="enemy-select" data-role="top"><option value="">Choisir</option></select></label><label>JUNGLE<select class="enemy-select" data-role="jungle"><option value="">Choisir</option></select></label><label>MID<select class="enemy-select" data-role="mid"><option value="">Choisir</option></select></label><label>ADC<select class="enemy-select" data-role="adc"><option value="">Choisir</option></select></label><label>SUPPORT<select class="enemy-select" data-role="support"><option value="">Choisir</option></select></label></div><div id="plan-reason" class="plan-reason">Choisis au moins le mid adverse pour recevoir une priorité expliquée.</div></div><div class="plan-grid" id="plan-grid"></div><div class="callout"><strong>Vérification patch</strong><p>Les noms de runes viennent du référentiel Data Dragon du patch chargé. Les synergies proposées sont des règles de prototype à valider par des parties et des statistiques.</p></div></section>
+      <section id="plan" class="page"><div class="section-head"><div><p class="eyebrow">BEFORE THE GAME</p><h3>Three ways to play Annie</h3><p class="subtle">Select the enemy champions. These are options to compare, not match predictions.</p></div><span class="pill amber" id="patch-label">LOADING PATCH</span></div><div class="composition panel"><div class="panel-head"><div><p class="eyebrow">ENEMY COMPOSITION</p><h3>Who are you facing?</h3></div></div><div class="enemy-selects"><label>TOP<select class="enemy-select" data-role="top"><option value="">Select</option></select></label><label>JUNGLE<select class="enemy-select" data-role="jungle"><option value="">Select</option></select></label><label>MID<select class="enemy-select" data-role="mid"><option value="">Select</option></select></label><label>ADC<select class="enemy-select" data-role="adc"><option value="">Select</option></select></label><label>SUPPORT<select class="enemy-select" data-role="support"><option value="">Select</option></select></label></div><div id="plan-reason" class="plan-reason">Select at least the enemy mid to see an explained priority.</div></div><div class="plan-grid" id="plan-grid"></div><div class="callout"><strong>Patch check</strong><p>Rune and item names come from the current Data Dragon patch. These prototype synergies still need to be checked against games and statistics.</p></div></section>
     </main>
   </div>
   <script type="module" src="/app.js"></script>

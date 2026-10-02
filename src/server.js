@@ -60,7 +60,7 @@ http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://127.0.0.1:${port}`);
   try {
     const origin = req.headers.origin;
-    if (origin && origin !== `http://127.0.0.1:${port}`) return json(res, 403, { error: 'Origine refusée' });
+    if (origin && origin !== `http://127.0.0.1:${port}`) return json(res, 403, { error: 'Origin rejected' });
     if (url.pathname === '/api/status') return json(res, 200, { keyConfigured: Boolean(riot.key), riotId, cacheUpdatedAt: (await readCache()).updatedAt });
     if (url.pathname === '/api/profile') {
       const cache = await readCache();
@@ -71,10 +71,10 @@ http.createServer(async (req, res) => {
       return json(res, 200, { ...cache, summary: summarize(cache.matches) });
     }
     if (url.pathname === '/api/live') return json(res, 200, await getLive());
-    if (req.method !== 'GET') return json(res, 405, { error: 'Méthode non autorisée' });
+    if (req.method !== 'GET') return json(res, 405, { error: 'Method not allowed' });
     const name = url.pathname === '/' ? '/index.html' : url.pathname;
     const path = resolve(publicDir, `.${name}`);
-    if (!path.startsWith(`${publicDir}${sep}`)) return json(res, 403, { error: 'Chemin refusé' });
+    if (!path.startsWith(`${publicDir}${sep}`)) return json(res, 403, { error: 'Path rejected' });
     const body = await readFile(path);
     res.writeHead(200, { 'Content-Type': `${types[extname(path)] || 'application/octet-stream'}; charset=utf-8` });
     res.end(body);

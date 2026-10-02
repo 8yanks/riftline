@@ -1,47 +1,47 @@
 # Riftline · V1 prototype
 
-Application locale de suivi LoL pour `8YKS#DEPTH`. Elle ne lit pas la mémoire du jeu et n’injecte rien dans le client.
+Local League of Legends tracker for `8YKS#DEPTH`. It does not read game memory or inject into the client.
 
-## Démarrer sur Windows
+## Start on Windows
 
-Prérequis : Node.js 24 ou plus récent.
+Requires Node.js 24 or later.
 
 ```powershell
 cd C:\Users\yanis\lol-coach-v1
-$env:RIOT_API_KEY = Read-Host 'Clé API Riot'
+$env:RIOT_API_KEY = Read-Host 'Riot API key'
 npm start
 ```
 
-Ouvrir ensuite `http://127.0.0.1:4173` et cliquer sur **Synchroniser mes parties**. La clé reste dans l’environnement du terminal ; elle n’est pas écrite dans les fichiers du projet. Pour changer de compte :
+Open `http://127.0.0.1:4173` and click **Refresh my matches**. The key stays in the terminal environment and is not written to project files. To use another account:
 
 ```powershell
 $env:RIOT_GAME_NAME = '8YKS'
 $env:RIOT_TAG_LINE = 'DEPTH'
 ```
 
-Le cache des matchs est enregistré dans `data/matches.json`, ignoré par Git. L’app récupère au maximum 20 identifiants de solo queue par synchronisation, met en cache les matchs déjà téléchargés et respecte un intervalle entre appels. Les erreurs HTTP 429 utilisent l’en-tête `Retry-After`.
+The match cache is stored in `data/matches.json`, which Git ignores. Each sync fetches up to 20 solo queue match IDs, reuses cached matches, and spaces out API calls. HTTP 429 responses use Riot's `Retry-After` header.
 
 ## Pages
 
-- **Vue d’ensemble** : classement Riot, 20 dernières parties, champions et indicateurs simples.
-- **Partie en cours** : données de l’API locale Riot (`127.0.0.1:2999`). Hors partie, elle reste vide. Les signaux d’achat sont des heuristiques exploratoires.
-- **Vision Lab** : simulation interactive du dernier aperçu en temps de jeu, compteur dès disparition, SS rouge à partir de trois secondes, et minimap redimensionnable.
-- **Plans de jeu** : trois pages Annie avec runes, objets illustrés et priorité heuristique selon la composition renseignée manuellement. Les choix doivent encore être validés contre des statistiques du patch.
+- **Overview**: Riot rank, recent matches, champions, and basic metrics.
+- **Live game**: Riot's local API (`127.0.0.1:2999`). It stays empty outside a match. Item signals are exploratory heuristics.
+- **Vision Lab**: interactive simulation of last seen game time, a timer that starts immediately on disappearance, a red SS after three seconds, and a resizable minimap.
+- **Game plans**: three Annie rune pages with illustrated items and a suggested priority based on the manually selected enemy composition. These choices still need validation against patch statistics.
 
-## Limites de cette première étape
+## Current limits
 
-Vision Lab n’analyse pas encore les pixels du jeu : les disparitions sont simulées par des boutons. Le suivi automatique de la minimap est le prochain module technique. La Live Client Data API ne fournit pas les positions ni la visibilité des champions. Les conseils de macro, le parcours supposé du jungler et l’évaluation de la botlane ne sont pas encore actifs en partie. Leur qualité devra être testée sur des replays avant tout déploiement en direct.
+Vision Lab does not analyze game pixels yet: buttons simulate disappearances. Automatic minimap tracking is the next technical module. The Live Client Data API does not provide champion positions or visibility. Macro advice, inferred jungle paths, and bot-lane follow-up estimates are not active during matches yet. They should be tested on replays before any live deployment.
 
-## Vérifier
+## Verify
 
 ```powershell
 npm test
 ```
 
-Tests inclus : calcul de statistiques Riot, seuil SS et coordonnées proportionnelles de la minimap.
+Tests cover Riot match statistics, the SS threshold, and proportional minimap coordinates.
 
 ## Sources
 
 - [Riot Developer Portal](https://developer.riotgames.com/docs/portal)
-- [API et Live Client Data LoL](https://developer.riotgames.com/docs/lol)
-- [Vanguard et accès mémoire des applications tierces](https://support.riotgames.com/en-us/riot/performance/game-memory-access-removed-for-third-party-apps)
+- [LoL API and Live Client Data](https://developer.riotgames.com/docs/lol)
+- [Vanguard and third-party game memory access](https://support.riotgames.com/en-us/riot/performance/game-memory-access-removed-for-third-party-apps)

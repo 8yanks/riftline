@@ -10,10 +10,10 @@ function localGet(path) {
       res.setEncoding('utf8');
       res.on('data', (chunk) => { body += chunk; });
       res.on('end', () => {
-        try { resolve(JSON.parse(body)); } catch { reject(new Error('Réponse locale invalide')); }
+        try { resolve(JSON.parse(body)); } catch { reject(new Error('Invalid local API response')); }
       });
     });
-    req.on('timeout', () => req.destroy(new Error('Délai API locale dépassé')));
+    req.on('timeout', () => req.destroy(new Error('Local API timed out')));
     req.on('error', reject);
   });
 }
@@ -44,6 +44,6 @@ export async function getLive() {
       events: events.Events?.slice(-20) ?? []
     };
   } catch {
-    return { online: false, message: 'Aucune partie détectée. La simulation Vision reste disponible.' };
+    return { online: false, message: 'No active match detected. Vision simulation is still available.' };
   }
 }

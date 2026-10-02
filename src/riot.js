@@ -10,7 +10,7 @@ export class RiotClient {
   }
 
   async get(host, path) {
-    if (!this.key) throw new Error('Clé Riot absente. Définis RIOT_API_KEY avant de démarrer.');
+    if (!this.key) throw new Error('Riot API key missing. Set RIOT_API_KEY before starting.');
     const gap = Date.now() - this.lastCall;
     if (gap < 650) await delay(650 - gap);
     this.lastCall = Date.now();
@@ -25,12 +25,12 @@ export class RiotClient {
         continue;
       }
       if (!response.ok) {
-        const label = response.status === 403 ? 'Clé Riot expirée ou refusée' : `Riot HTTP ${response.status}`;
+        const label = response.status === 403 ? 'Riot API key expired or rejected' : `Riot HTTP ${response.status}`;
         throw new Error(label);
       }
       return response.json();
     }
-    throw new Error('Limite Riot atteinte. Réessaie plus tard.');
+    throw new Error('Riot rate limit reached. Try again later.');
   }
 
   account(name, tag) {
@@ -52,7 +52,7 @@ export class RiotClient {
 
 export function simplifyMatch(match, puuid) {
   const player = match.info.participants.find((p) => p.puuid === puuid);
-  if (!player) throw new Error('Joueur absent de la partie');
+  if (!player) throw new Error('Player not found in match');
   const teammates = match.info.participants.filter((p) => p.teamId === player.teamId);
   const teamKills = teammates.reduce((sum, p) => sum + p.kills, 0);
   return {
