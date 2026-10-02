@@ -1,4 +1,5 @@
 import { formatGameTime, visionState, normalizedPosition } from './vision.js';
+import { plansFor, choosePlan, laneTips, lolalyticsLinks } from './planner.js';
 
 const $ = (selector) => document.querySelector(selector);
 const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
@@ -39,31 +40,23 @@ async function loadStaticData() {
   renderPlans();
 }
 
-const plans = [
-  { key: 'burst', number: '01 · BURST', title: 'Punish a mistake', description: 'Short trades and kill pressure after level 6. Best when you can get in range without taking too much poke.', main: [8112, 8126, 8137, 8106], secondary: [8226, 8210], objective: 'Create a roam window', items: [4645, 3089] },
-  { key: 'safe', number: '02 · SAFETY', title: 'Stay in control', description: 'Defensive mobility and a steady lane against assassins or teams that can engage on you.', main: [8230, 8226, 8210, 8236], secondary: [8473, 8451], objective: 'Reach your item spikes without giving up kills', items: [3157, 3089] },
-  { key: 'poke', number: '03 · POKE', title: 'Wear them down', description: 'Consistent pressure against a less mobile target. Set up the wave before moving around the map.', main: [8229, 8226, 8210, 8237], secondary: [8126, 8106], objective: 'Force a recall and gain priority', items: [6655, 3137] }
-];
+let plans = plansFor('Annie', 'MIDDLE');
 let viewedPlan = 'burst';
 let activeDeskTab = 'builds';
-
-const dangerousMids = new Set(['Fizz', 'Zed', 'Talon', 'Katarina', 'Akali', 'Qiyana', 'Yasuo', 'Yone', 'Irelia', 'Leblanc', 'Syndra', 'Xerath', 'Velkoz', 'Hwei', 'Ziggs', 'Lux', 'Azir']);
-const pokeMids = new Set(['Veigar', 'Malzahar', 'TwistedFate', 'Anivia', 'Viktor', 'Orianna']);
-
-function choosePlan(composition) {
-  const mid = composition.mid;
-  const jungle = composition.jungle;
-  if (!mid) return { key: null, reason: 'Select at least the enemy mid to see an explained priority.' };
-  if (dangerousMids.has(mid) || ['Rengar', 'Khazix', 'Nocturne', 'Evelynn'].includes(jungle)) return { key: 'safe', reason: `${mid} or the selected jungler can punish an overextended Annie. Start with the safety page, then adjust defensive items to the damage actually present.` };
-  if (pokeMids.has(mid)) return { key: 'poke', reason: `${mid} may offer repeated trade windows. The poke page can create a health advantage before a roam; compare it with burst based on your actual access to the lane.` };
-  return { key: 'burst', reason: `Against ${mid}, burst is the starting point. Keep the safety page in mind if the matchup or ganks make it hard to get in range.` };
-}
+let manualPlan = false;
 
 function renderPlans() {
   $('#patch-label').textContent = `DATA DRAGON ${ddragonVersion}`;
   const names = Object.values(championData).map((c) => ({ id: c.id, name: c.name })).sort((a, b) => a.name.localeCompare(b.name, 'en'));
+  const self = $('#self-champion');
+  const saved = JSON.parse(localStorage.getItem('riftline-plan') || '{}');
+  manualPlan = Boolean(saved.manualPlan);
+  if (saved.viewedPlan) viewedPlan = saved.viewedPlan;
+  self.innerHTML = names.map((champion) => `<option value="${escapeHtml(champion.id)}">${escapeHtml(champion.name)}</option>`).join('');
+  self.value = saved.champion && championData[saved.champion] ? saved.champion : 'Annie';
+  $('#self-role').value = saved.role || 'MIDDLE';
   document.querySelectorAll('.enemy-select').forEach((select) => {
-    const previous = select.value;
+    const previous = saved.composition?.[select.dataset.role] || select.value;
     select.innerHTML = '<option value="">Select</option>' + names.map((champion) => `<option value="${escapeHtml(champion.id)}">${escapeHtml(champion.name)}</option>`).join('');
     select.value = previous;
   });
@@ -71,16 +64,28 @@ function renderPlans() {
 }
 
 function updatePlan() {
+  const champion = $('#self-champion').value || 'Annie';
+  const role = $('#self-role').value;
+  plans = plansFor(champion, role, championData[champion]?.tags || []);
   const composition = Object.fromEntries([...document.querySelectorAll('.enemy-select')].map((select) => [select.dataset.role, select.value]));
-  const selected = choosePlan(composition);
+  const selected = choosePlan(champion, role, composition);
   $('#plan-reason').textContent = selected.reason;
-  viewedPlan = selected.key || viewedPlan;
+  if (!manualPlan || !plans.some((p) => p.key === viewedPlan)) viewedPlan = selected.key || plans[0].key;
+  $('#plan-title').textContent = `Draft desk · ${championData[champion]?.name || champion}`;
+  $('#self-icon').src = championIcon(champion);
+  $('#self-icon').alt = champion;
+  $('#self-name').textContent = championData[champion]?.name || champion;
+  $('#self-role-label').textContent = `YOUR PICK · ${role === 'MIDDLE' ? 'MID' : role === 'BOTTOM' ? 'BOT' : role === 'UTILITY' ? 'SUPPORT' : role}`;
   const roles = [['top', 'TOP'], ['jungle', 'JUNGLE'], ['mid', 'MID'], ['adc', 'BOT'], ['support', 'SUPPORT']];
   $('#draft-enemies').innerHTML = roles.map(([key, label]) => `<div class="draft-slot ${composition[key] ? 'filled' : ''}">${composition[key] ? `<img src="${championIcon(composition[key])}" alt="">` : '<span>?</span>'}<small>${label}</small></div>`).join('');
   renderPlanCards(selected);
-  const mid = composition.mid;
+  const lane = { TOP: 'top', JUNGLE: 'jungle', MIDDLE: 'mid', BOTTOM: 'adc', UTILITY: 'support' }[role];
+  const mid = composition[lane];
   const jungle = composition.jungle;
-  $('#matchup-brief').innerHTML = `<div class="brief-opponent">${mid ? `<img src="${championIcon(mid)}" alt="">` : '<span>?</span>'}<div><small>LANE OPPONENT</small><strong>${escapeHtml(championData[mid]?.name || 'Choose enemy mid')}</strong></div></div><div class="brief-row"><span>LANE APPROACH</span><strong>${selected.key === 'safe' ? 'Respect engage range' : selected.key === 'poke' ? 'Trade around cooldowns' : selected.key === 'burst' ? 'Look for a short all-in window' : 'Waiting for matchup'}</strong></div><div class="brief-row"><span>JUNGLE CONTEXT</span><strong>${jungle ? `Track ${escapeHtml(championData[jungle]?.name || jungle)} before pushing` : 'Select enemy jungle for context'}</strong></div><p class="brief-note">These are planning prompts, not per-level win probabilities. Check wave state, health and items in the actual game.</p>`;
+  const tips = laneTips(championData[champion], championData[mid]);
+  const links = lolalyticsLinks(championData[champion]?.name || champion, championData[mid]?.name || mid, role);
+  $('#matchup-brief').innerHTML = `<div class="brief-opponent">${mid ? `<img src="${championIcon(mid)}" alt="">` : '<span>?</span>'}<div><small>${role === 'JUNGLE' ? 'ENEMY JUNGLER' : 'LANE OPPONENT'}</small><strong>${escapeHtml(championData[mid]?.name || 'Choose opponent')}</strong></div></div><div class="brief-row"><span>LANE APPROACH</span><strong>${selected.key === 'safe' ? 'Respect engage range' : selected.key === 'poke' ? 'Trade around cooldowns' : selected.key === 'burst' ? 'Look for a short pressure window' : 'Waiting for matchup'}</strong></div><div class="brief-row"><span>JUNGLE CONTEXT</span><strong>${jungle ? `Track ${escapeHtml(championData[jungle]?.name || jungle)} before pushing` : 'Select enemy jungle for context'}</strong></div><div class="lane-tips"><strong>HOW TO PLAY THE LANE</strong>${tips.map((tip) => `<p>${escapeHtml(tip)}</p>`).join('')}</div><div class="source-links"><a href="${links.counters}" target="_blank" rel="noopener noreferrer">Counter picks on LoLalytics ↗</a>${links.matchup ? `<a href="${links.matchup}" target="_blank" rel="noopener noreferrer">This matchup: Emerald+ stats ↗</a>` : ''}</div><p class="brief-note">Lane tips are local heuristics. Open LoLalytics for current counter picks, win rate, sample size, and patch; its data is not imported into Riftline.</p>`;
+  localStorage.setItem('riftline-plan', JSON.stringify({ champion, role, composition, viewedPlan, manualPlan }));
 }
 
 function runeIcon(id) {
@@ -100,13 +105,17 @@ function renderPlanCards(selected) {
   $('#plan-detail').innerHTML = `<div class="detail-heading"><span>${plan.number}</span><h3>${plan.title}</h3></div><p>${plan.description}</p><div class="detail-columns"><div><small>PRIMARY RUNES</small>${runeNames(plan.main)}</div><div><small>SECONDARY RUNES</small>${runeNames(plan.secondary)}</div><div><small>CORE ITEMS</small>${itemNames}</div></div><div class="detail-goal"><small>GAME PLAN</small><strong>${plan.objective}</strong></div>`;
 }
 
-document.querySelectorAll('.enemy-select').forEach((select) => select.addEventListener('change', updatePlan));
+document.querySelectorAll('.enemy-select').forEach((select) => select.addEventListener('change', () => { manualPlan = false; updatePlan(); }));
+$('#self-champion').addEventListener('change', () => { manualPlan = false; updatePlan(); });
+$('#self-role').addEventListener('change', () => { manualPlan = false; updatePlan(); });
 $('#plan-grid').addEventListener('click', (event) => {
   const button = event.target.closest('[data-plan]');
   if (!button) return;
   viewedPlan = button.dataset.plan;
+  manualPlan = true;
   const composition = Object.fromEntries([...document.querySelectorAll('.enemy-select')].map((select) => [select.dataset.role, select.value]));
-  renderPlanCards(choosePlan(composition));
+  renderPlanCards(choosePlan($('#self-champion').value, $('#self-role').value, composition));
+  localStorage.setItem('riftline-plan', JSON.stringify({ champion: $('#self-champion').value, role: $('#self-role').value, composition, viewedPlan, manualPlan }));
 });
 document.querySelectorAll('[data-desk-tab]').forEach((button) => button.addEventListener('click', () => {
   activeDeskTab = button.dataset.deskTab;
@@ -287,6 +296,17 @@ document.querySelectorAll('.nav').forEach((button) => button.addEventListener('c
 }));
 
 $('#sync-button').addEventListener('click', syncProfile);
+if (window.riftlineDesktop) {
+  $('#overlay-preview').hidden = false;
+  let preview = false;
+  $('#overlay-preview').addEventListener('click', async () => {
+    preview = await window.riftlineDesktop.preview(!preview);
+    $('#overlay-preview').textContent = preview ? 'Hide preview' : 'Preview overlay';
+  });
+  window.riftlineDesktop.onOverlayState((state) => {
+    $('#desktop-status').textContent = state.online ? 'Overlay active over the game.' : state.preview ? 'Preview active.' : 'Waiting for a match. The overlay appears automatically.';
+  });
+}
 
 async function init() {
   await loadStaticData();

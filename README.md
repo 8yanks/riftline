@@ -35,12 +35,18 @@ npm start
 
 The match cache is stored in `data/matches.json`, which Git ignores. Each sync fetches up to 100 recent solo queue match IDs, reuses cached matches, and spaces out API calls. The first expanded sync can take roughly two minutes. The UI shows import progress. HTTP 429 responses use Riot's `Retry-After` header.
 
+## Desktop overlay
+
+Run `npm install` once, then `npm run desktop`. This starts a desktop window and a small transparent, click-through overlay. If the local server is already running on port 4173, the desktop app reuses it. Open **Live game → Preview overlay** to test without a match. During a match, the overlay appears automatically when the Live Client Data API responds. Use League's **Borderless** or **Windowed** display mode; an exclusive fullscreen game may cover ordinary desktop windows. Close the desktop window to stop the overlay.
+
+The overlay displays the selected rune plan and item signals from observed enemy purchases. It works with custom games when their Live Client Data API is available. It cannot recommend runes during champion select automatically: choose your champion, role and enemy team in **Game plans** before entering the match. The app does not change League's rune page for you.
+
 ## Pages
 
 - **Overview**: Riot rank and a role selector for top, jungle, mid, bot, and support. Each role shows its games, wins, win rate, KDA, CS/min, kill participation, damage/min, gold/min, vision/min, champions, and matches from the imported solo queue sample.
 - **Live game**: Riot's local API (`127.0.0.1:2999`) for matchmade and custom games. It stays empty outside a match. Optional local endpoints can fail without hiding the game status. Item signals are exploratory heuristics.
 - **Vision Lab**: interactive simulation of last seen game time, a timer that starts immediately on disappearance, a red SS after three seconds, and a resizable minimap.
-- **Game plans**: a compact draft desk with an enemy team strip, three selectable Annie rune and item plans, and an explained matchup tab. The enemy composition is entered manually. Rune and item icons come from Data Dragon. These choices still need validation against patch statistics; the app does not calculate numerical matchup or team-scaling scores.
+- **Game plans**: choose any champion and role, then enter the enemy team. Three rune and item archetypes and lane tips respond to the draft. The matchup tab links to the selected duel and counter page on LoLalytics for current Emerald+ win rates, sample size and patch. LoLalytics does not provide a public data API for third-party apps, so Riftline does not import its statistics or claim its local suggestions are statistically validated.
 
 ## Current limits
 
