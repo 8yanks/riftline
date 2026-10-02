@@ -25,6 +25,7 @@ let enemies = [];
 const missing = new Map();
 let ssPreviewStartedAt = 0;
 let lastLeaguePhase = null;
+const ssShortcuts = [];
 
 async function serverReady() {
   try { return (await fetch(`${base}/api/status`)).ok; } catch { return false; }
@@ -87,7 +88,8 @@ function createWindows() {
     else overlay.hide();
     dashboard?.webContents.send('riftline-overlay-state', { visible: overlay.isVisible(), online, preview });
     if (!online) { seenSignals.clear(); missing.clear(); enemies = []; lastGameTime = 0; return; }
-    const own = live.players?.find((player) => player.riotId && player.riotId === live.active?.riotId)
+    const own = live.players?.find((player) => player.team && player.team === live.active?.team)
+      || live.players?.find((player) => player.riotId && player.riotId === live.active?.riotId)
       || live.players?.find((player) => player.champion === live.active?.champion);
     enemies = own ? live.players.filter((player) => player.team !== own.team).slice(0, 5).map((player) => player.champion) : [];
     if (live.gameTime < lastGameTime - 30) { seenSignals.clear(); missing.clear(); }
@@ -123,11 +125,22 @@ function publishVision() {
 }
 
 function toggleMissing(index) {
-  if (!latestLive?.online || !enemies[index]) return;
+  if (!latestLive?.online || !enemies[index]) return ssState();
   const champion = enemies[index];
   if (missing.has(champion)) missing.delete(champion);
   else missing.set(champion, estimatedGameTime());
   publishVision();
+  return ssState();
+}
+
+function ssState() {
+  return {
+    online: Boolean(latestLive?.online),
+    rows: visionRows(enemies, missing, estimatedGameTime()),
+    shortcuts: ssShortcuts,
+    overlayVisible: Boolean(overlay && !overlay.isDestroyed() && overlay.isVisible()),
+    teamIdentified: enemies.length > 0
+  };
 }
 
 function createDraft() {
@@ -184,10 +197,12 @@ ipcMain.handle('riftline-open-draft', () => { createDraft(); return true; });
 ipcMain.handle('riftline-confirm-draft', () => { draft?.close(); return true; });
 ipcMain.handle('riftline-preview-item', () => showItemToast({ item: 3157, title: 'Preview item alert', detail: 'This is a test notification. Live alerts react to observed enemy items.' }));
 ipcMain.handle('riftline-preview-ss', () => { ssPreviewStartedAt = Date.now(); preview = true; overlay?.showInactive(); publishVision(); return true; });
+ipcMain.handle('riftline-ss-state', ssState);
+ipcMain.handle('riftline-toggle-ss', (_event, index) => toggleMissing(Number(index)));
 app.whenReady().then(async () => {
   await ensureServer(); createWindows(); loadStaticData();
   globalShortcut.register('Control+Shift+R', createDraft);
-  for (let index = 0; index < 5; index++) globalShortcut.register(`Control+Shift+${index + 1}`, () => toggleMissing(index));
+  for (let index = 0; index < 5; index++) ssShortcuts.push(globalShortcut.register(`Control+Shift+${index + 1}`, () => toggleMissing(index)));
 }).catch((error) => {
   console.error(error);
   app.quit();

@@ -30,13 +30,14 @@ export async function getLive(read = localGet, expectedRiotId = '') {
     const events = eventsResult.status === 'fulfilled' ? eventsResult.value : {};
     const active = activeResult.status === 'fulfilled' ? activeResult.value : {};
     const activeId = active.riotId || active.summonerName || expectedRiotId;
-    const own = players.find((player) => (player.riotId || player.summonerName) === activeId);
+    const ids = [active.riotId, active.summonerName, expectedRiotId].filter(Boolean).map((id) => String(id).trim().toLowerCase());
+    const own = players.find((player) => [player.riotId, player.summonerName].some((id) => id && ids.includes(String(id).trim().toLowerCase())));
     return {
       online: true,
       gameTime: game.gameTime,
       gameMode: game.gameMode,
       mapName: game.mapName,
-      active: { riotId: activeId, champion: own?.championName || '', gold: active.currentGold, level: active.level },
+      active: { riotId: activeId, champion: own?.championName || '', team: own?.team || '', gold: active.currentGold, level: active.level },
       players: players.map((p) => ({
         riotId: p.riotId || p.summonerName || '',
         champion: p.championName,

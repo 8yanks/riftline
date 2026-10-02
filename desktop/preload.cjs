@@ -5,6 +5,8 @@ contextBridge.exposeInMainWorld('riftlineDesktop', {
   confirmDraft: () => ipcRenderer.invoke('riftline-confirm-draft'),
   previewItem: () => ipcRenderer.invoke('riftline-preview-item'),
   previewSS: () => ipcRenderer.invoke('riftline-preview-ss'),
+  ssState: () => ipcRenderer.invoke('riftline-ss-state'),
+  toggleSS: (index) => ipcRenderer.invoke('riftline-toggle-ss', index),
   onOverlayState: (callback) => ipcRenderer.on('riftline-overlay-state', (_event, state) => callback(state)),
   onVisionState: (callback) => ipcRenderer.on('riftline-vision-state', (_event, state) => callback(state))
 });

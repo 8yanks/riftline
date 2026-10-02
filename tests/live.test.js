@@ -27,5 +27,21 @@ test('active champion is resolved from playerlist using the active Riot ID', asy
   };
   const live = await getLive(read);
   assert.equal(live.active.champion, 'Annie');
+  assert.equal(live.active.team, 'ORDER');
   assert.equal(live.active.gold, 700);
+});
+
+test('active team resolves from summoner name when Riot IDs differ', async () => {
+  const read = async (path) => {
+    if (path.endsWith('/gamestats')) return { gameTime: 300 };
+    if (path.endsWith('/activeplayer')) return { riotId: 'Different#Tag', summonerName: 'My Summoner' };
+    if (path.endsWith('/playerlist')) return [
+      { riotId: 'My#EUW', summonerName: 'my summoner', championName: 'Annie', team: 'ORDER' },
+      { riotId: 'Enemy#EUW', championName: 'Akali', team: 'CHAOS' }
+    ];
+    return { Events: [] };
+  };
+  const live = await getLive(read);
+  assert.equal(live.active.team, 'ORDER');
+  assert.equal(live.active.champion, 'Annie');
 });

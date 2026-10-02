@@ -229,6 +229,7 @@ function buildSignals(live) {
 }
 
 async function refreshLive() {
+  if (window.riftlineDesktop) refreshSSControls();
   try {
     const live = await getJson('/api/live');
     $('#live-state').textContent = live.online ? 'GAME LIVE' : 'OFFLINE';
@@ -241,6 +242,17 @@ async function refreshLive() {
       <div class="player-row"><img class="champion-icon" src="${championIcon(player.champion)}" alt=""><div class="champion-main"><strong>${escapeHtml(player.champion)} · ${escapeHtml(player.role || 'Role unknown')}</strong><small>${escapeHtml(player.team)} · level ${player.level} · ${player.scores.kills}/${player.scores.deaths}/${player.scores.assists}</small><div class="item-list">${player.items.filter((i) => i.id).map((i) => { const name = itemData[i.id]?.name || `Item ${i.id}`; return `<img class="item-icon" src="${itemIcon(i.id)}" alt="${escapeHtml(name)}" title="${escapeHtml(name)}">`; }).join('')}</div></div></div>`).join('') : live.online ? 'Player list is not available yet.' : 'Waiting for a match.';
     $('#build-signals').innerHTML = live.online ? buildSignals(live).map((signal) => `<div class="signal"><strong>${escapeHtml(signal.title)}</strong><p>${escapeHtml(signal.detail)}</p></div>`).join('') : 'Signals will use observed enemy items.';
   } catch { $('#live-state').textContent = 'API UNAVAILABLE'; }
+}
+
+async function refreshSSControls() {
+  const state = await window.riftlineDesktop.ssState();
+  const status = $('#ss-controls-status');
+  if (!state.online) status.textContent = 'No live match. Use Preview SS timer to test the overlay.';
+  else if (!state.teamIdentified) status.textContent = 'Live match found, but your team could not be identified. SS controls are unavailable.';
+  else if (!state.overlayVisible) status.textContent = 'Enemy team found, but the overlay is hidden.';
+  else if (state.shortcuts.some((registered) => !registered)) status.textContent = 'Some SS shortcuts could not register. Use the buttons below.';
+  else status.textContent = 'Mark an enemy missing, then mark them visible when they reappear. The red SS starts after 3 seconds.';
+  $('#ss-controls').innerHTML = state.rows.map((row, index) => `<button type="button" class="ss-control" data-ss-index="${index}">${escapeHtml(row.champion)} · ${row.missing ? `Missing ${row.seconds}s — mark visible` : 'Visible — mark missing'}</button>`).join('');
 }
 
 const champions = [
@@ -306,6 +318,13 @@ document.querySelectorAll('.nav').forEach((button) => button.addEventListener('c
 
 $('#sync-button').addEventListener('click', syncProfile);
 if (window.riftlineDesktop) {
+  $('#ss-controls-panel').hidden = false;
+  $('#ss-controls').addEventListener('click', async (event) => {
+    const button = event.target.closest('[data-ss-index]');
+    if (!button) return;
+    await window.riftlineDesktop.toggleSS(Number(button.dataset.ssIndex));
+    refreshSSControls();
+  });
   $('#overlay-preview').hidden = false;
   $('#item-preview').hidden = false;
   $('#ss-preview').hidden = false;

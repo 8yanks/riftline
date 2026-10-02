@@ -15,3 +15,5 @@
 .lane-tips{padding:14px 4px 4px}.lane-tips>strong{font-size:10px;color:#426abb;letter-spacing:.1em}.lane-tips p{margin:8px 0;color:#3d506a;font-size:11px;line-height:1.55}.source-links{display:flex;flex-wrap:wrap;gap:7px;padding:12px 0}.source-links a{padding:8px 10px;border:1px solid #b8cce9;color:#315eaa;background:#edf3fb;text-decoration:none;font-size:10px;font-weight:800}.source-links a:hover{background:#dfeafa}
 .rune-popup-button{border:1px solid #8fa9d0;background:#fff;color:#315e9c;padding:9px 12px;font-size:11px;font-weight:800;cursor:pointer}.rune-popup-button[hidden]{display:none}
 .desktop-controls{flex-wrap:wrap}.desktop-controls span{min-width:180px}.desktop-controls button{white-space:nowrap}
+.ss-control { margin: 0 8px 8px 0; padding: 9px 12px; border: 1px solid #d9e1ee; border-radius: 8px; background: #fff; color: #24324a; cursor: pointer; font: inherit; }
+.ss-control:hover { border-color: #b88845; }

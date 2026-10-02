@@ -64,10 +64,10 @@ async function refresh() {
     : 'No strong enemy item signal yet. Follow your selected plan and reassess each recall.';
 }
 
+window.riftlineDesktop?.onVisionState((rows) => {
+  $('ss-list').innerHTML = rows.length ? rows.map((row) => `<div class="ss-row ${row.alert ? 'alert' : ''}"><span>${row.index}. ${escapeHtml(row.champion)}</span><b>${row.alert ? 'SS' : row.missing ? `${row.seconds}s` : 'VISIBLE'}</b><i>${row.missing ? formatTime(row.at) : ''}</i></div>`).join('') : 'Waiting for enemy team';
+});
 await loadData();
 await refresh();
 setInterval(refresh, 4000);
 window.addEventListener('storage', refresh);
-window.riftlineDesktop?.onVisionState((rows) => {
-  $('ss-list').innerHTML = rows.length ? rows.map((row) => `<div class="ss-row ${row.alert ? 'alert' : ''}"><span>${row.index}. ${escapeHtml(row.champion)}</span><b>${row.alert ? 'SS' : row.missing ? `${row.seconds}s` : 'VISIBLE'}</b><i>${row.missing ? formatTime(row.at) : ''}</i></div>`).join('') : 'Waiting for enemy team';
-});
