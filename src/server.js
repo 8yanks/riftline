@@ -15,6 +15,7 @@ const riotId = { name: process.env.RIOT_GAME_NAME || '8YKS', tag: process.env.RI
 
 let cached = null;
 let syncing = null;
+let syncProgress = null;
 
 async function readCache() {
   if (cached) return cached;
@@ -26,25 +27,28 @@ async function readCache() {
 async function sync() {
   if (syncing) return syncing;
   syncing = (async () => {
+    syncProgress = { phase: 'Finding matches', done: 0, total: 0 };
     const cache = await readCache();
     const account = await riot.account(riotId.name, riotId.tag);
     const ranks = await riot.ranks(account.puuid);
-    const ids = await riot.matchIds(account.puuid, 20);
+    const ids = await riot.matchIds(account.puuid, 100);
     const byId = new Map(cache.matches.map((m) => [m.id, m]));
-    for (const id of ids) {
-      if (byId.has(id)) continue;
+    const missing = ids.filter((id) => !byId.has(id));
+    syncProgress = { phase: 'Importing solo queue matches', done: 0, total: missing.length };
+    for (const id of missing) {
       byId.set(id, simplifyMatch(await riot.match(id), account.puuid));
+      syncProgress.done++;
     }
     cached = {
       account: { gameName: account.gameName, tagLine: account.tagLine },
       ranks,
-      matches: [...byId.values()].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 200),
+      matches: [...byId.values()].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 300),
       updatedAt: new Date().toISOString()
     };
     await mkdir(dataDir, { recursive: true });
     await writeFile(cacheFile, JSON.stringify(cached), 'utf8');
     return cached;
-  })().finally(() => { syncing = null; });
+  })().finally(() => { syncing = null; syncProgress = null; });
   return syncing;
 }
 
@@ -62,6 +66,7 @@ http.createServer(async (req, res) => {
     const origin = req.headers.origin;
     if (origin && origin !== `http://127.0.0.1:${port}`) return json(res, 403, { error: 'Origin rejected' });
     if (url.pathname === '/api/status') return json(res, 200, { keyConfigured: Boolean(riot.key), riotId, cacheUpdatedAt: (await readCache()).updatedAt });
+    if (url.pathname === '/api/sync-status') return json(res, 200, { syncing: Boolean(syncing), progress: syncProgress });
     if (url.pathname === '/api/profile') {
       const cache = await readCache();
       return json(res, 200, { ...cache, summary: summarize(cache.matches) });

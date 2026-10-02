@@ -82,22 +82,63 @@ function updatePlan() {
 
 document.querySelectorAll('.enemy-select').forEach((select) => select.addEventListener('change', updatePlan));
 
+let currentProfile = null;
+const roleNames = { ALL: 'All roles', TOP: 'Top', JUNGLE: 'Jungle', MIDDLE: 'Mid', BOTTOM: 'Bot', UTILITY: 'Support' };
+
+function renderRole(profile) {
+  const role = $('#role-select').value;
+  const matches = role === 'ALL' ? profile.matches : profile.matches.filter((match) => match.role === role);
+  const stats = role === 'ALL' ? { games: profile.summary.total, wins: profile.summary.wins, winRate: profile.summary.winRate, champions: profile.summary.champions } : profile.summary.byRole?.[role];
+  const games = stats?.games ?? 0;
+  const roleMetrics = role === 'ALL' ? null : stats;
+  const average = (value) => games ? Math.round(matches.reduce((sum, match) => sum + value(match), 0) / games * 10) / 10 : 0;
+  const allMetrics = { kills: average((m) => m.kills), deaths: average((m) => m.deaths), assists: average((m) => m.assists), csPerMin: average((m) => m.minutes ? m.cs / m.minutes : 0), kp: average((m) => m.kp), damagePerMin: average((m) => m.minutes ? m.damage / m.minutes : 0), goldPerMin: average((m) => m.minutes ? m.gold / m.minutes : 0), visionPerMin: average((m) => m.minutes ? m.vision / m.minutes : 0) };
+  const metrics = roleMetrics || allMetrics;
+  const metric = (label, value) => `<div class="role-metric"><small>${label}</small><strong>${value}</strong></div>`;
+  $('#role-summary').classList.toggle('empty', !games);
+  $('#role-summary').innerHTML = games ? [
+    metric('GAMES', games), metric('WINS', stats.wins), metric('WIN RATE', `${stats.winRate} %`),
+    metric('K / D / A', `${metrics.kills} / ${metrics.deaths} / ${metrics.assists}`),
+    metric('CS / MIN', metrics.csPerMin), metric('KILL PARTICIPATION', `${metrics.kp} %`),
+    metric('DAMAGE / MIN', metrics.damagePerMin), metric('GOLD / MIN', metrics.goldPerMin), metric('VISION / MIN', metrics.visionPerMin)
+  ].join('') : 'No imported games for this role yet.';
+  $('#role-note').textContent = games < 10 && role !== 'ALL' ? `Only ${games} ${roleNames[role].toLowerCase()} game${games === 1 ? '' : 's'} imported. Treat these averages as observations, not a reliable trend.` : 'Stats reflect the imported solo queue sample. Averages are per game.';
+  const won = matches.filter((match) => match.win);
+  const lost = matches.filter((match) => !match.win);
+  if (won.length >= 3 && lost.length >= 3) {
+    const mean = (group, value) => Math.round(group.reduce((sum, match) => sum + value(match), 0) / group.length * 10) / 10;
+    const comparisons = [
+      ['Deaths / game', (m) => m.deaths],
+      ['CS / min', (m) => m.minutes ? m.cs / m.minutes : 0],
+      ['Kill participation', (m) => m.kp]
+    ];
+    $('#role-insights').innerHTML = `<strong>WIN / LOSS PATTERNS</strong><p>Compare these games in replay before treating a difference as a cause.</p><div>${comparisons.map(([label, value]) => { const suffix = label === 'Kill participation' ? '%' : ''; return `<span>${label}<b>${mean(won, value)}${suffix} wins · ${mean(lost, value)}${suffix} losses</b></span>`; }).join('')}</div>`;
+  } else $('#role-insights').innerHTML = '';
+  $('#champions-title').textContent = role === 'ALL' ? 'What you actually play' : `${roleNames[role]} champions`;
+  $('#matches-title').textContent = role === 'ALL' ? 'Recent matches' : `Recent ${roleNames[role].toLowerCase()} matches`;
+  const championRows = stats?.champions || [];
+  $('#champions').classList.toggle('empty', !championRows.length);
+  $('#champions').innerHTML = championRows.length ? championRows.slice(0, 8).map((row) => `
+    <div class="champion-row"><img class="champion-icon" src="${championIcon(row.champion)}" alt=""><div class="champion-main"><strong>${escapeHtml(row.champion)}</strong><small>${row.games} game${row.games > 1 ? 's' : ''} · ${row.csPerMin} CS/min · ${row.deaths} deaths</small></div><div class="row-value"><strong class="${row.winRate >= 50 ? 'win' : 'loss'}">${row.winRate} %</strong><small>win rate</small></div></div>`).join('') : 'No champions in this role yet.';
+  $('#matches').classList.toggle('empty', !matches.length);
+  $('#matches').innerHTML = matches.length ? matches.slice(0, 8).map((match) => `
+    <div class="match-row"><img class="champion-icon" src="${championIcon(match.champion)}" alt=""><div class="match-main"><strong>${escapeHtml(match.champion)} <span class="${match.win ? 'win' : 'loss'}">${match.win ? '· Win' : '· Loss'}</span></strong><small>${escapeHtml(match.role)} · ${new Date(match.date).toLocaleDateString('en-GB')} · ${match.minutes} min</small></div><div class="row-value"><strong>${match.kills}/${match.deaths}/${match.assists}</strong><small>${match.cs} CS · ${match.kp}% KP</small></div></div>`).join('') : 'No matches in this role yet.';
+}
+
 function renderProfile(profile) {
+  currentProfile = profile;
   const summary = profile.summary;
   $('#total-games').textContent = summary.total || '—';
   $('#win-rate').textContent = summary.total ? `${summary.winRate} %` : '—';
-  $('#mid-games').textContent = summary.total ? summary.midGames : '—';
+  $('#roles-played').textContent = summary.total ? Object.values(summary.byRole || {}).filter((row) => row.games).length : '—';
   const solo = profile.ranks.find((r) => r.queueType === 'RANKED_SOLO_5x5');
   $('#rank').textContent = solo ? `${solo.tier} ${solo.rank}` : '—';
   $('#lp').textContent = solo ? `${solo.leaguePoints} LP · ${solo.wins} W / ${solo.losses} L this season` : 'Sync to refresh';
   $('#updated-at').textContent = profile.updatedAt ? `Updated ${new Date(profile.updatedAt).toLocaleString('en-GB')}` : 'Waiting for first sync';
-  $('#champions').classList.toggle('empty', !summary.champions.length);
-  $('#champions').innerHTML = summary.champions.length ? summary.champions.slice(0, 8).map((row) => `
-    <div class="champion-row"><img class="champion-icon" src="${championIcon(row.champion)}" alt=""><div class="champion-main"><strong>${escapeHtml(row.champion)}</strong><small>${row.games} game${row.games > 1 ? 's' : ''} · ${row.csPerMin} CS/min · ${row.deaths} deaths</small></div><div class="row-value"><strong class="${row.winRate >= 50 ? 'win' : 'loss'}">${row.winRate} %</strong><small>win rate</small></div></div>`).join('') : 'Sync to view your champions.';
-  $('#matches').classList.toggle('empty', !profile.matches.length);
-  $('#matches').innerHTML = profile.matches.length ? profile.matches.slice(0, 8).map((match) => `
-    <div class="match-row"><img class="champion-icon" src="${championIcon(match.champion)}" alt=""><div class="match-main"><strong>${escapeHtml(match.champion)} <span class="${match.win ? 'win' : 'loss'}">${match.win ? '· Win' : '· Loss'}</span></strong><small>${escapeHtml(match.role)} · ${new Date(match.date).toLocaleDateString('en-GB')} · ${match.minutes} min</small></div><div class="row-value"><strong>${match.kills}/${match.deaths}/${match.assists}</strong><small>${match.cs} CS · ${match.kp}% KP</small></div></div>`).join('') : 'No matches cached yet.';
+  renderRole(profile);
 }
+
+$('#role-select').addEventListener('change', () => { if (currentProfile) renderRole(currentProfile); });
 
 async function refreshProfile() {
   try { renderProfile(await getJson('/api/profile')); }
@@ -108,17 +149,26 @@ async function syncProfile() {
   const button = $('#sync-button');
   button.disabled = true;
   $('#sync-note').textContent = 'Importing matches within Riot rate limits…';
+  const progressTimer = setInterval(async () => {
+    try {
+      const status = await getJson('/api/sync-status');
+      if (status.progress?.total) $('#sync-note').textContent = `${status.progress.phase}: ${status.progress.done} / ${status.progress.total}. Keep this page open.`;
+    } catch { /* Keep the existing message. */ }
+  }, 2000);
   try {
-    const profile = await getJson('/api/sync');
+    const response = await fetch('/api/sync', { method: 'POST' });
+    const profile = await response.json();
+    if (!response.ok) throw new Error(profile.error || `HTTP ${response.status}`);
     renderProfile(profile);
     $('#sync-note').textContent = `${profile.matches.length} matches cached. Your key is never saved to disk.`;
   } catch (error) { $('#sync-note').textContent = error.message; }
-  finally { button.disabled = false; }
+  finally { clearInterval(progressTimer); button.disabled = false; }
 }
 
 function buildSignals(live) {
-  const own = live.players.find((p) => p.riotId === live.active.riotId);
-  const enemies = live.players.filter((p) => p.team !== own?.team);
+  const own = live.players.find((p) => p.riotId && p.riotId === live.active.riotId) || live.players.find((p) => p.champion === live.active.champion);
+  if (!own) return [{ title: 'Team not identified', detail: 'Player data is available, but the local API did not identify your team. Enemy item signals are paused.' }];
+  const enemies = live.players.filter((p) => p.team !== own.team);
   const crit = enemies.reduce((sum, player) => sum + player.items.reduce((n, item) => n + Number(itemData[item.id]?.stats?.FlatCritChanceMod || 0), 0), 0);
   const magicResist = enemies.reduce((sum, player) => sum + player.items.reduce((n, item) => n + Number(itemData[item.id]?.stats?.FlatSpellBlockMod || 0), 0), 0);
   const results = [];
@@ -132,13 +182,13 @@ async function refreshLive() {
   try {
     const live = await getJson('/api/live');
     $('#live-state').textContent = live.online ? 'GAME LIVE' : 'OFFLINE';
-    $('#live-heading').textContent = live.online ? `${live.active.champion || 'Champion'} · Level ${live.active.level}` : 'No active game';
-    $('#live-description').textContent = live.online ? 'Local game client data. Refreshes every 5 seconds.' : live.message;
+    $('#live-heading').textContent = live.online ? `${live.active.champion || 'In game'}${live.active.level ? ` · Level ${live.active.level}` : ''}` : 'No active game';
+    $('#live-description').textContent = live.online ? `${live.gameMode || 'Game'} · ${live.mapName || 'Map'} · Local API refreshes every 5 seconds. Custom games use the same connection.` : live.message;
     $('#live-time').textContent = live.online ? formatGameTime(live.gameTime) : '--:--';
-    $('#players').classList.toggle('empty', !live.online);
+    $('#players').classList.toggle('empty', !live.online || !live.players.length);
     $('#build-signals').classList.toggle('empty', !live.online);
-    $('#players').innerHTML = live.online ? live.players.map((player) => `
-      <div class="player-row"><img class="champion-icon" src="${championIcon(player.champion)}" alt=""><div class="champion-main"><strong>${escapeHtml(player.champion)} · ${escapeHtml(player.role)}</strong><small>${escapeHtml(player.team)} · level ${player.level} · ${player.scores.kills}/${player.scores.deaths}/${player.scores.assists}</small><div class="item-list">${player.items.filter((i) => i.id).map((i) => { const name = itemData[i.id]?.name || `Item ${i.id}`; return `<img class="item-icon" src="${itemIcon(i.id)}" alt="${escapeHtml(name)}" title="${escapeHtml(name)}">`; }).join('')}</div></div></div>`).join('') : 'Waiting for a match.';
+    $('#players').innerHTML = live.online && live.players.length ? live.players.map((player) => `
+      <div class="player-row"><img class="champion-icon" src="${championIcon(player.champion)}" alt=""><div class="champion-main"><strong>${escapeHtml(player.champion)} · ${escapeHtml(player.role || 'Role unknown')}</strong><small>${escapeHtml(player.team)} · level ${player.level} · ${player.scores.kills}/${player.scores.deaths}/${player.scores.assists}</small><div class="item-list">${player.items.filter((i) => i.id).map((i) => { const name = itemData[i.id]?.name || `Item ${i.id}`; return `<img class="item-icon" src="${itemIcon(i.id)}" alt="${escapeHtml(name)}" title="${escapeHtml(name)}">`; }).join('')}</div></div></div>`).join('') : live.online ? 'Player list is not available yet.' : 'Waiting for a match.';
     $('#build-signals').innerHTML = live.online ? buildSignals(live).map((signal) => `<div class="signal"><strong>${escapeHtml(signal.title)}</strong><p>${escapeHtml(signal.detail)}</p></div>`).join('') : 'Signals will use observed enemy items.';
   } catch { $('#live-state').textContent = 'API UNAVAILABLE'; }
 }

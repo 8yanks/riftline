@@ -20,4 +20,9 @@ test('match summary uses the selected PUUID and team kills', () => {
   assert.equal(match.cs, 180);
   assert.deepEqual(match.items, [3157]);
   assert.equal(summarize([match]).midGames, 1);
+  const role = summarize([match]).byRole.MIDDLE;
+  assert.equal(role.games, 1);
+  assert.equal(role.winRate, 100);
+  assert.equal(role.csPerMin, 6);
+  assert.equal(role.champions[0].champion, 'Annie');
 });

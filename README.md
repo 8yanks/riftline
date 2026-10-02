@@ -19,18 +19,18 @@ $env:RIOT_GAME_NAME = '8YKS'
 $env:RIOT_TAG_LINE = 'DEPTH'
 ```
 
-The match cache is stored in `data/matches.json`, which Git ignores. Each sync fetches up to 20 solo queue match IDs, reuses cached matches, and spaces out API calls. HTTP 429 responses use Riot's `Retry-After` header.
+The match cache is stored in `data/matches.json`, which Git ignores. Each sync fetches up to 100 recent solo queue match IDs, reuses cached matches, and spaces out API calls. The first expanded sync can take roughly two minutes. The UI shows import progress. HTTP 429 responses use Riot's `Retry-After` header.
 
 ## Pages
 
-- **Overview**: Riot rank, recent matches, champions, and basic metrics.
-- **Live game**: Riot's local API (`127.0.0.1:2999`). It stays empty outside a match. Item signals are exploratory heuristics.
+- **Overview**: Riot rank and a role selector for top, jungle, mid, bot, and support. Each role shows its games, wins, win rate, KDA, CS/min, kill participation, damage/min, gold/min, vision/min, champions, and matches from the imported solo queue sample.
+- **Live game**: Riot's local API (`127.0.0.1:2999`) for matchmade and custom games. It stays empty outside a match. Optional local endpoints can fail without hiding the game status. Item signals are exploratory heuristics.
 - **Vision Lab**: interactive simulation of last seen game time, a timer that starts immediately on disappearance, a red SS after three seconds, and a resizable minimap.
 - **Game plans**: three Annie rune pages with illustrated items and a suggested priority based on the manually selected enemy composition. These choices still need validation against patch statistics.
 
 ## Current limits
 
-Vision Lab does not analyze game pixels yet: buttons simulate disappearances. Automatic minimap tracking is the next technical module. The Live Client Data API does not provide champion positions or visibility. Macro advice, inferred jungle paths, and bot-lane follow-up estimates are not active during matches yet. They should be tested on replays before any live deployment.
+Role averages are descriptive, especially for small samples. Custom games are supported by the live connection, but this has been validated with a simulated local API response rather than an active custom match on this machine. The local `gamestats` response does not identify the queue type, so the app shows the game mode and map without claiming that it can distinguish a custom lobby from a matchmade one. Custom matches are not included in the solo queue history. Vision Lab does not analyze game pixels yet: buttons simulate disappearances. Automatic minimap tracking is the next technical module. The Live Client Data API does not provide champion positions or visibility. Macro advice, inferred jungle paths, and bot-lane follow-up estimates are not active during matches yet. They should be tested on replays before any live deployment.
 
 ## Verify
 

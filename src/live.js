@@ -18,28 +18,32 @@ function localGet(path) {
   });
 }
 
-export async function getLive() {
+export async function getLive(read = localGet) {
   try {
-    const [game, players, events, active] = await Promise.all([
-      localGet('/liveclientdata/gamestats'),
-      localGet('/liveclientdata/playerlist'),
-      localGet('/liveclientdata/eventdata'),
-      localGet('/liveclientdata/activeplayer')
+    const game = await read('/liveclientdata/gamestats');
+    const [playersResult, eventsResult, activeResult] = await Promise.allSettled([
+      read('/liveclientdata/playerlist'),
+      read('/liveclientdata/eventdata'),
+      read('/liveclientdata/activeplayer')
     ]);
+    const players = playersResult.status === 'fulfilled' && Array.isArray(playersResult.value) ? playersResult.value : [];
+    const events = eventsResult.status === 'fulfilled' ? eventsResult.value : {};
+    const active = activeResult.status === 'fulfilled' ? activeResult.value : {};
     return {
       online: true,
       gameTime: game.gameTime,
       gameMode: game.gameMode,
-      active: { riotId: active.riotId, champion: active.championName, gold: active.currentGold, level: active.level },
+      mapName: game.mapName,
+      active: { riotId: active.riotId || active.summonerName || '', champion: active.championName || '', gold: active.currentGold, level: active.level },
       players: players.map((p) => ({
-        riotId: p.riotId,
+        riotId: p.riotId || p.summonerName || '',
         champion: p.championName,
         team: p.team,
         role: p.position,
         level: p.level,
         isDead: p.isDead,
-        items: p.items.map((i) => ({ id: i.itemID, name: i.displayName })),
-        scores: p.scores
+        items: (p.items || []).map((i) => ({ id: i.itemID, name: i.displayName })),
+        scores: p.scores || { kills: 0, deaths: 0, assists: 0 }
       })),
       events: events.Events?.slice(-20) ?? []
     };

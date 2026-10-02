@@ -12,7 +12,7 @@ export class RiotClient {
   async get(host, path) {
     if (!this.key) throw new Error('Riot API key missing. Set RIOT_API_KEY before starting.');
     const gap = Date.now() - this.lastCall;
-    if (gap < 650) await delay(650 - gap);
+    if (gap < 1300) await delay(1300 - gap);
     this.lastCall = Date.now();
     for (let attempt = 0; attempt < 3; attempt++) {
       const response = await fetch(`${host}${path}`, {
@@ -41,8 +41,8 @@ export class RiotClient {
     return this.get(PLATFORM, `/lol/league/v4/entries/by-puuid/${encodeURIComponent(puuid)}`);
   }
 
-  matchIds(puuid, count = 20) {
-    return this.get(REGION, `/lol/match/v5/matches/by-puuid/${encodeURIComponent(puuid)}/ids?queue=420&start=0&count=${Math.min(50, Math.max(1, count))}`);
+  matchIds(puuid, count = 50, start = 0, queue = 420) {
+    return this.get(REGION, `/lol/match/v5/matches/by-puuid/${encodeURIComponent(puuid)}/ids?queue=${queue}&start=${start}&count=${Math.min(100, Math.max(1, count))}`);
   }
 
   match(id) {
@@ -59,6 +59,8 @@ export function simplifyMatch(match, puuid) {
     id: match.metadata.matchId,
     date: new Date(match.info.gameCreation).toISOString(),
     patch: match.info.gameVersion,
+    queueId: match.info.queueId,
+    gameType: match.info.gameType,
     champion: player.championName,
     role: player.teamPosition,
     win: player.win,
@@ -93,5 +95,43 @@ export function summarize(matches) {
     deaths: Math.round(row.deaths / row.games * 10) / 10,
     csPerMin: Math.round(row.csPerMin / row.games * 10) / 10
   })).sort((a, b) => b.games - a.games);
-  return { total, wins, winRate: total ? Math.round(wins / total * 100) : 0, midGames: mid.length, champions };
+  const byRole = Object.fromEntries(['TOP', 'JUNGLE', 'MIDDLE', 'BOTTOM', 'UTILITY'].map((role) => {
+    const roleMatches = matches.filter((m) => m.role === role);
+    const games = roleMatches.length;
+    const average = (value) => games ? Math.round(roleMatches.reduce((sum, match) => sum + value(match), 0) / games * 10) / 10 : 0;
+    const roleChampions = Object.values(roleMatches.reduce((acc, match) => {
+    const row = acc[match.champion] ??= { champion: match.champion, games: 0, wins: 0, kills: 0, deaths: 0, assists: 0, csPerMin: 0, kp: 0, damagePerMin: 0 };
+    row.games++;
+    row.wins += Number(match.win);
+    row.kills += match.kills;
+    row.deaths += match.deaths;
+    row.assists += match.assists;
+    row.csPerMin += match.minutes ? match.cs / match.minutes : 0;
+    row.kp += match.kp;
+    row.damagePerMin += match.minutes ? match.damage / match.minutes : 0;
+    return acc;
+    }, {})).map((row) => ({
+    champion: row.champion,
+    games: row.games,
+    winRate: Math.round(row.wins / row.games * 100),
+    kills: Math.round(row.kills / row.games * 10) / 10,
+    deaths: Math.round(row.deaths / row.games * 10) / 10,
+    assists: Math.round(row.assists / row.games * 10) / 10,
+    csPerMin: Math.round(row.csPerMin / row.games * 10) / 10,
+    kp: Math.round(row.kp / row.games),
+    damagePerMin: Math.round(row.damagePerMin / row.games)
+    })).sort((a, b) => b.games - a.games);
+    return [role, {
+      games,
+      wins: roleMatches.filter((m) => m.win).length,
+      winRate: games ? Math.round(roleMatches.filter((m) => m.win).length / games * 100) : 0,
+      kills: average((m) => m.kills), deaths: average((m) => m.deaths), assists: average((m) => m.assists),
+      csPerMin: average((m) => m.minutes ? m.cs / m.minutes : 0),
+      kp: average((m) => m.kp), damagePerMin: average((m) => m.minutes ? m.damage / m.minutes : 0),
+      goldPerMin: average((m) => m.minutes ? m.gold / m.minutes : 0),
+      visionPerMin: average((m) => m.minutes ? m.vision / m.minutes : 0),
+      champions: roleChampions
+    }];
+  }));
+  return { total, wins, winRate: total ? Math.round(wins / total * 100) : 0, midGames: mid.length, champions, byRole };
 }
