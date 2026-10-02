@@ -9,6 +9,7 @@ const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const publicDir = join(root, 'public');
 const dataDir = join(root, 'data');
 const cacheFile = join(dataDir, 'matches.json');
+const draftFile = join(dataDir, 'draft.json');
 const port = Number(process.env.PORT || 4173);
 const riot = new RiotClient(process.env.RIOT_API_KEY);
 const riotId = { name: process.env.RIOT_GAME_NAME || '8YKS', tag: process.env.RIOT_TAG_LINE || 'DEPTH' };
@@ -58,6 +59,33 @@ function json(res, status, value) {
   res.end(body);
 }
 
+async function readDraft() {
+  try { return JSON.parse(await readFile(draftFile, 'utf8')); }
+  catch { return {}; }
+}
+
+async function saveDraft(req) {
+  let body = '';
+  for await (const chunk of req) {
+    body += chunk;
+    if (body.length > 16000) throw new Error('Draft payload too large');
+  }
+  const input = JSON.parse(body);
+  const text = (value) => typeof value === 'string' ? value.slice(0, 40) : '';
+  const roles = ['TOP', 'JUNGLE', 'MIDDLE', 'BOTTOM', 'UTILITY'];
+  const keys = ['top', 'jungle', 'mid', 'adc', 'support'];
+  const result = {
+    champion: text(input.champion),
+    role: roles.includes(input.role) ? input.role : 'MIDDLE',
+    composition: Object.fromEntries(keys.map((key) => [key, text(input.composition?.[key])])),
+    viewedPlan: ['burst', 'safe', 'poke'].includes(input.viewedPlan) ? input.viewedPlan : 'burst',
+    manualPlan: Boolean(input.manualPlan)
+  };
+  await mkdir(dataDir, { recursive: true });
+  await writeFile(draftFile, JSON.stringify(result), 'utf8');
+  return result;
+}
+
 const types = { '.html': 'text/html', '.css': 'text/css', '.js': 'text/javascript', '.svg': 'image/svg+xml' };
 
 http.createServer(async (req, res) => {
@@ -75,7 +103,9 @@ http.createServer(async (req, res) => {
       const cache = await sync();
       return json(res, 200, { ...cache, summary: summarize(cache.matches) });
     }
-    if (url.pathname === '/api/live') return json(res, 200, await getLive());
+    if (url.pathname === '/api/live') return json(res, 200, await getLive(undefined, `${riotId.name}#${riotId.tag}`));
+    if (url.pathname === '/api/draft' && req.method === 'GET') return json(res, 200, await readDraft());
+    if (url.pathname === '/api/draft' && req.method === 'POST') return json(res, 200, await saveDraft(req));
     if (req.method !== 'GET') return json(res, 405, { error: 'Method not allowed' });
     const name = url.pathname === '/' ? '/index.html' : url.pathname;
     const path = resolve(publicDir, `.${name}`);

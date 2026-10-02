@@ -1,5 +1,5 @@
 import { formatGameTime, visionState, normalizedPosition } from './vision.js';
-import { plansFor, choosePlan, laneTips, lolalyticsLinks } from './planner.js';
+import { plansFor, choosePlan, planConfidence, laneTips, lolalyticsLinks } from './planner.js';
 
 const $ = (selector) => document.querySelector(selector);
 const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
@@ -48,6 +48,10 @@ let manualPlan = false;
 function renderPlans() {
   $('#patch-label').textContent = `DATA DRAGON ${ddragonVersion}`;
   const names = Object.values(championData).map((c) => ({ id: c.id, name: c.name })).sort((a, b) => a.name.localeCompare(b.name, 'en'));
+  if (!names.length) {
+    $('#plan-reason').textContent = 'Champion and rune data are unavailable. Reconnect and reload to choose a page.';
+    return;
+  }
   const self = $('#self-champion');
   const saved = JSON.parse(localStorage.getItem('riftline-plan') || '{}');
   manualPlan = Boolean(saved.manualPlan);
@@ -68,7 +72,8 @@ function updatePlan() {
   const role = $('#self-role').value;
   plans = plansFor(champion, role, championData[champion]?.tags || []);
   const composition = Object.fromEntries([...document.querySelectorAll('.enemy-select')].map((select) => [select.dataset.role, select.value]));
-  const selected = choosePlan(champion, role, composition);
+  const heuristic = choosePlan(champion, role, composition);
+  const selected = planConfidence(champion) === 'curated' ? heuristic : { key: null, reason: `Rune pages for ${championData[champion]?.name || champion} are experimental. Pick a page manually and verify it with current champion-specific data.` };
   $('#plan-reason').textContent = selected.reason;
   if (!manualPlan || !plans.some((p) => p.key === viewedPlan)) viewedPlan = selected.key || plans[0].key;
   $('#plan-title').textContent = `Draft desk · ${championData[champion]?.name || champion}`;
@@ -84,8 +89,10 @@ function updatePlan() {
   const jungle = composition.jungle;
   const tips = laneTips(championData[champion], championData[mid]);
   const links = lolalyticsLinks(championData[champion]?.name || champion, championData[mid]?.name || mid, role);
-  $('#matchup-brief').innerHTML = `<div class="brief-opponent">${mid ? `<img src="${championIcon(mid)}" alt="">` : '<span>?</span>'}<div><small>${role === 'JUNGLE' ? 'ENEMY JUNGLER' : 'LANE OPPONENT'}</small><strong>${escapeHtml(championData[mid]?.name || 'Choose opponent')}</strong></div></div><div class="brief-row"><span>LANE APPROACH</span><strong>${selected.key === 'safe' ? 'Respect engage range' : selected.key === 'poke' ? 'Trade around cooldowns' : selected.key === 'burst' ? 'Look for a short pressure window' : 'Waiting for matchup'}</strong></div><div class="brief-row"><span>JUNGLE CONTEXT</span><strong>${jungle ? `Track ${escapeHtml(championData[jungle]?.name || jungle)} before pushing` : 'Select enemy jungle for context'}</strong></div><div class="lane-tips"><strong>HOW TO PLAY THE LANE</strong>${tips.map((tip) => `<p>${escapeHtml(tip)}</p>`).join('')}</div><div class="source-links"><a href="${links.counters}" target="_blank" rel="noopener noreferrer">Counter picks on LoLalytics ↗</a>${links.matchup ? `<a href="${links.matchup}" target="_blank" rel="noopener noreferrer">This matchup: Emerald+ stats ↗</a>` : ''}</div><p class="brief-note">Lane tips are local heuristics. Open LoLalytics for current counter picks, win rate, sample size, and patch; its data is not imported into Riftline.</p>`;
-  localStorage.setItem('riftline-plan', JSON.stringify({ champion, role, composition, viewedPlan, manualPlan }));
+  $('#matchup-brief').innerHTML = `<div class="brief-opponent">${mid ? `<img src="${championIcon(mid)}" alt="">` : '<span>?</span>'}<div><small>${role === 'JUNGLE' ? 'ENEMY JUNGLER' : 'LANE OPPONENT'}</small><strong>${escapeHtml(championData[mid]?.name || 'Choose opponent')}</strong></div></div><div class="brief-row"><span>LANE APPROACH</span><strong>${heuristic.key === 'safe' ? 'Respect engage range' : heuristic.key === 'poke' ? 'Trade around cooldowns' : heuristic.key === 'burst' ? 'Look for a short pressure window' : 'Waiting for matchup'}</strong></div><div class="brief-row"><span>JUNGLE CONTEXT</span><strong>${jungle ? `Track ${escapeHtml(championData[jungle]?.name || jungle)} before pushing` : 'Select enemy jungle for context'}</strong></div><div class="lane-tips"><strong>HOW TO PLAY THE LANE</strong>${tips.map((tip) => `<p>${escapeHtml(tip)}</p>`).join('')}</div><div class="source-links"><a href="${links.counters}" target="_blank" rel="noopener noreferrer">Counter picks on LoLalytics ↗</a>${links.matchup ? `<a href="${links.matchup}" target="_blank" rel="noopener noreferrer">This matchup: Emerald+ stats ↗</a>` : ''}</div><p class="brief-note">Lane tips are local heuristics. Open LoLalytics for current counter picks, win rate, sample size, and patch; its data is not imported into Riftline.</p>`;
+  const draft = { champion, role, composition, viewedPlan, manualPlan };
+  localStorage.setItem('riftline-plan', JSON.stringify(draft));
+  fetch('/api/draft', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(draft) }).catch(() => {});
 }
 
 function runeIcon(id) {
@@ -115,7 +122,9 @@ $('#plan-grid').addEventListener('click', (event) => {
   manualPlan = true;
   const composition = Object.fromEntries([...document.querySelectorAll('.enemy-select')].map((select) => [select.dataset.role, select.value]));
   renderPlanCards(choosePlan($('#self-champion').value, $('#self-role').value, composition));
-  localStorage.setItem('riftline-plan', JSON.stringify({ champion: $('#self-champion').value, role: $('#self-role').value, composition, viewedPlan, manualPlan }));
+  const draft = { champion: $('#self-champion').value, role: $('#self-role').value, composition, viewedPlan, manualPlan };
+  localStorage.setItem('riftline-plan', JSON.stringify(draft));
+  fetch('/api/draft', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(draft) }).catch(() => {});
 });
 document.querySelectorAll('[data-desk-tab]').forEach((button) => button.addEventListener('click', () => {
   activeDeskTab = button.dataset.deskTab;
@@ -298,6 +307,9 @@ document.querySelectorAll('.nav').forEach((button) => button.addEventListener('c
 $('#sync-button').addEventListener('click', syncProfile);
 if (window.riftlineDesktop) {
   $('#overlay-preview').hidden = false;
+  $('#item-preview').hidden = false;
+  $('#ss-preview').hidden = false;
+  $('#open-rune-popup').hidden = false;
   let preview = false;
   $('#overlay-preview').addEventListener('click', async () => {
     preview = await window.riftlineDesktop.preview(!preview);
@@ -306,9 +318,17 @@ if (window.riftlineDesktop) {
   window.riftlineDesktop.onOverlayState((state) => {
     $('#desktop-status').textContent = state.online ? 'Overlay active over the game.' : state.preview ? 'Preview active.' : 'Waiting for a match. The overlay appears automatically.';
   });
+  $('#item-preview').addEventListener('click', () => window.riftlineDesktop.previewItem());
+  $('#ss-preview').addEventListener('click', () => window.riftlineDesktop.previewSS());
+  $('#open-rune-popup').addEventListener('click', () => window.riftlineDesktop.openDraft());
 }
+window.addEventListener('storage', (event) => { if (event.key === 'riftline-plan') renderPlans(); });
 
 async function init() {
+  try {
+    const draft = await getJson('/api/draft');
+    if (draft.champion) localStorage.setItem('riftline-plan', JSON.stringify(draft));
+  } catch {}
   await loadStaticData();
   try {
     const status = await getJson('/api/status');

@@ -1,7 +1,12 @@
 const mage = [
   { key: 'burst', number: '01 · BURST', title: 'Punish a mistake', description: 'Short trades and kill pressure when the target enters your range.', main: [8112, 8126, 8137, 8106], secondary: [8226, 8210], objective: 'Create a roam window', items: [4645, 3089] },
-  { key: 'safe', number: '02 · SAFETY', title: 'Stay in control', description: 'Mobility and survivability against hard engage.', main: [8230, 8226, 8210, 8236], secondary: [8473, 8451], objective: 'Reach item spikes without giving up kills', items: [3157, 3089] },
+  { key: 'safe', number: '02 · SAFETY', title: 'Protect your lane', description: 'Keep Electrocute for short return trades; Bone Plating and Overgrowth add protection against an all-in.', main: [8112, 8139, 8137, 8106], secondary: [8473, 8451], objective: 'Survive the first engage, then trade on cooldowns', items: [3157, 3089] },
   { key: 'poke', number: '03 · POKE', title: 'Wear them down', description: 'Repeat trades against a target that cannot easily engage.', main: [8229, 8226, 8210, 8237], secondary: [8126, 8106], objective: 'Force a recall and gain priority', items: [6655, 3137] }
+];
+const annie = [
+  mage[0],
+  mage[1],
+  { key: 'poke', number: '03 · POKE', title: 'Pressure melee range', description: 'Use Aery for repeated Q and auto trades when the opponent must walk into your range.', main: [8214, 8226, 8210, 8237], secondary: [8473, 8451], objective: 'Build a health lead without spending stun', items: [6655, 3089] }
 ];
 const assassin = [
   { key: 'burst', number: '01 · BURST', title: 'Find a pick', description: 'Commit to short kill windows against vulnerable carries.', main: [8112, 8143, 8137, 8106], secondary: [8009, 8014], objective: 'Turn priority into a pick', items: [3142, 6697] },
@@ -25,7 +30,8 @@ const support = [
 ];
 
 export function plansFor(champion, role, tags = []) {
-  if (['Annie', 'Veigar', 'Hwei', 'Lux', 'Viktor', 'Orianna'].includes(champion)) return mage;
+  if (champion === 'Annie') return annie;
+  if (['Veigar', 'Hwei', 'Lux', 'Viktor', 'Orianna'].includes(champion)) return mage;
   if (['Talon', 'Zed', 'Qiyana', 'KhaZix'].includes(champion)) return assassin;
   if (['Nasus', 'Sylas', 'Yone', 'Yasuo', 'Garen'].includes(champion)) return fighter;
   if (role === 'BOTTOM' || tags.includes('Marksman')) return marksman;
@@ -34,6 +40,10 @@ export function plansFor(champion, role, tags = []) {
   if (tags.includes('Fighter') || tags.includes('Tank')) return fighter;
   if (tags.includes('Support')) return support;
   return mage;
+}
+
+export function planConfidence(champion) {
+  return champion === 'Annie' ? 'curated' : 'experimental';
 }
 
 const danger = new Set(['Fizz', 'Zed', 'Talon', 'Katarina', 'Akali', 'Qiyana', 'Yasuo', 'Yone', 'Irelia', 'Leblanc', 'Syndra', 'Xerath', 'Hwei', 'Ziggs', 'Lux', 'Azir', 'Darius', 'Draven', 'Pyke']);

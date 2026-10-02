@@ -18,7 +18,7 @@ function localGet(path) {
   });
 }
 
-export async function getLive(read = localGet) {
+export async function getLive(read = localGet, expectedRiotId = '') {
   try {
     const game = await read('/liveclientdata/gamestats');
     const [playersResult, eventsResult, activeResult] = await Promise.allSettled([
@@ -29,12 +29,14 @@ export async function getLive(read = localGet) {
     const players = playersResult.status === 'fulfilled' && Array.isArray(playersResult.value) ? playersResult.value : [];
     const events = eventsResult.status === 'fulfilled' ? eventsResult.value : {};
     const active = activeResult.status === 'fulfilled' ? activeResult.value : {};
+    const activeId = active.riotId || active.summonerName || expectedRiotId;
+    const own = players.find((player) => (player.riotId || player.summonerName) === activeId);
     return {
       online: true,
       gameTime: game.gameTime,
       gameMode: game.gameMode,
       mapName: game.mapName,
-      active: { riotId: active.riotId || active.summonerName || '', champion: active.championName || '', gold: active.currentGold, level: active.level },
+      active: { riotId: activeId, champion: own?.championName || '', gold: active.currentGold, level: active.level },
       players: players.map((p) => ({
         riotId: p.riotId || p.summonerName || '',
         champion: p.championName,

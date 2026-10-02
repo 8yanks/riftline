@@ -3,6 +3,10 @@ import assert from 'node:assert/strict';
 import { plansFor, choosePlan, lolalyticsLinks, laneTips } from '../public/planner.js';
 
 test('draft suggestions follow champion and lane opponent', () => {
+  const annieSafety = plansFor('Annie', 'MIDDLE').find((plan) => plan.key === 'safe');
+  assert.equal(annieSafety.main[0], 8112);
+  assert.ok(annieSafety.secondary.includes(8473));
+  assert.equal(choosePlan('Annie', 'MIDDLE', { mid: 'Akali' }).key, 'safe');
   assert.equal(plansFor('Talon', 'MIDDLE')[0].main[0], 8112);
   assert.equal(plansFor('Nasus', 'TOP')[0].main[0], 8010);
   assert.equal(plansFor('Caitlyn', 'BOTTOM', ['Marksman'])[0].main[0], 8005);
