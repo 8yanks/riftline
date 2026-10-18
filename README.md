@@ -1,6 +1,6 @@
 # Riftline · Personal League of Legends assistant
 
-Riftline is a local prototype built around my own League of Legends gameplay (`8YKS#DEPTH`). My goal is to build a personal AI-assisted coach: understand my habits, explore rune pages that fit how I play, and turn match reviews into specific things to improve.
+Riftline is a local prototype built around my own League of Legends gameplay (`8YKS#DEPTH`). My goal is to build a personal League assistant with two complementary directions: a minimap-awareness experiment that notices when an enemy stops being visible, and an AI-assisted coach that understands my habits, explores rune pages that fit how I play, and turns match reviews into specific things to improve.
 
 This project is intended to continue. Its direction is being refined around personal usefulness rather than reproducing the breadth of OP.GG, Itero or other established tools. Development uses AI assistance; the repository is a learning project and the current recommendations are experimental.
 
@@ -11,6 +11,25 @@ The prototype includes match statistics, a local desktop overlay, draft-dependen
 **The personalized AI coach is a goal, not an implemented feature.** Current suggestions use local rules and archetypes; they do not learn my playstyle or prove that a rune page is optimal. Existing automated tests do not establish coaching quality.
 
 The app does not read game memory or inject into the client.
+
+## Original goal: notice missing enemies
+
+A central idea is to compensate for missing teammate pings: observe the minimap visible on my own screen, detect a transition from an enemy being visible to no longer being visible, and explore a local missing-enemy alert.
+
+This would report **loss of observed visibility**, not the enemy's hidden location, intended destination or a confirmed incoming gank. An unseen enemy may have recalled, entered fog of war, died, or simply become visually obscured; the detector must not invent a cause.
+
+**Current state:** the overlay has a manual SS toggle and elapsed-time display, while Vision Lab uses simulated visibility. Automatic minimap capture, champion-icon recognition and screen-based missing detection are not implemented. The existing three-second alert threshold belongs to the manual prototype; it has not been validated for automatic detection.
+
+**Technical research path:**
+- Begin offline with recordings from the player's own perspective and manually labelled visible, missing and uncertain states.
+- Calibrate the minimap region and UI scale; recognize enemy icons across frames and measure identity confusion, detection delay, false alerts and missed transitions.
+- Handle overlapping icons, pings, icon changes, deaths, capture interruptions and UI changes. Missing or unreliable frames must yield an unknown state rather than an automatic disappearance alert.
+- Use temporal confirmation and suppress repeated alerts; evaluate usefulness before choosing an alert delay.
+- If this is sufficiently reliable, describe the exact live capture and notification behaviour to Riot and seek explicit clarification before treating it as a feature for live use.
+
+**Policy status is unresolved.** Reading pixels instead of memory does not by itself make automated live alerts acceptable. Riot restricts third-party tools that draw conclusions for players or alter their perception during a game. This project has no approval for automatic missing-enemy alerts. A production API key would not by itself approve the feature or supply missing visibility data.
+
+References: [Riot third-party application guidance](https://support.riotgames.com/fr-fr/riot/events/third-party-applications/) and [League game-integrity policies](https://developer.riotgames.com/docs/lol#developer-api-policy_game-integrity).
 
 ## Direction and proposed roadmap
 
@@ -23,7 +42,9 @@ These are proposed next steps, not completed features or a delivery commitment.
 5. **An AI review assistant.** Let a conversational assistant explain recorded observations and help plan practice. Ground its answers in supplied data and versioned game references, distinguish observation from hypothesis, and ask for missing context instead of inventing gameplay events. No LLM integration is currently implemented.
 6. **Optional manual clip review.** Explore user-selected clips or screenshots for situations not captured by statistics. This is a research idea, not automatic replay understanding.
 
-**Suggested first milestone:** a post-game review card with three supported observations, one player note and one practice goal. Start with the existing match import; add a small manual journal so reflection can continue when the API key is unavailable. Both additions remain to be implemented.
+**Minimap research milestone:** evaluate visible-to-missing detection on recorded clips, with no live alerts, and document accuracy and failure cases. This remains a proposed experiment.
+
+**Coaching milestone:** a post-game review card with three supported observations, one player note and one practice goal. Start with the existing match import; add a small manual journal so reflection can continue when the API key is unavailable. Both additions remain to be implemented.
 
 ## Data access and scope
 
@@ -31,7 +52,7 @@ A production key is not a prerequisite for exploring a private personal tool. Ri
 
 Remote match-history requests need an appropriate Riot API key. The local game-client API is a separate data source; it is not a replacement for historical match data and does not provide arbitrary hidden game information. Static game references can use Data Dragon.
 
-The preferred coaching direction is preparation and post-game reflection. Any future live assistance needs its own review against Riot's current game-integrity policies; the existence of an overlay in this prototype is not evidence of Riot approval. In particular, do not infer hidden opponents, automate decisions, or promise unavailable visibility data.
+The project explores both minimap awareness and personalized coaching. Preparation and post-game reflection are the first coaching targets; automated live missing-enemy alerts remain a separate research idea with unresolved policy status. Any future live assistance needs its own review against Riot's current game-integrity policies; the existence of an overlay in this prototype is not evidence of Riot approval. In particular, do not infer hidden opponents, automate decisions, or promise unavailable visibility data.
 
 Official references:
 - [API keys and personal projects](https://developer.riotgames.com/docs/portal#web-apis_api-keys)
